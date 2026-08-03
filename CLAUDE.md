@@ -23,7 +23,7 @@ Soirées, Carte ou Accueil, et avant de toucher aux polices.
 
 ## Stack & commandes
 
-- Expo SDK 57 · React Native 0.86 · **Expo Router** (onglets) · TypeScript strict · Reanimated 4 + Gesture Handler · **Tamagui 2** (design system).
+- Expo SDK 57 · React Native 0.86 · **Expo Router** (onglets) · TypeScript strict · Reanimated 4 + Gesture Handler · **Tamagui 2** (design system) · **expo-video** (fond de l'accueil).
 - `npm start` (Metro / Expo Go) · `npm run android` · `npm run ios`.
 - Vérification standard après modification : `npx tsc --noEmit`, puis `npx expo-doctor`, puis contrôle visuel sur émulateur ou Expo Go.
 - Pas de tests, pas de linter configurés.
@@ -37,6 +37,7 @@ Soirées, Carte ou Accueil, et avant de toucher aux polices.
 | `app/_layout.tsx` | Racine : polices, safe-area, `TamaguiProvider`, `ToastProvider`, `ReserveProvider` |
 | `app/(tabs)/_layout.tsx` | **Source unique de la navigation** (header, barre d'onglets, transition, swipe) |
 | `app/(tabs)/index · carte · soirees · infos` | Les 4 écrans (accueil, menu, événements, infos pratiques) |
+| `assets/videos/accueil.mp4` | Vidéo d'ambiance en fond de l'accueil (2,4 Mo) |
 | `constants/theme.ts` | **Valeurs brutes du design system** en TS (couleurs, type scale, spacing, radius, ombres, polices) |
 | `tamagui.config.ts` | Expose `theme.ts` à Tamagui : tokens, polices, thèmes d'accent, animations |
 | `components/ui/Button.tsx` | **LE bouton de l'app** — un seul objet, décliné par thème |
@@ -147,6 +148,28 @@ relancer une).
   - sur un composant Tamagui, passer `transition={reduceMotion ? null : 'bouncy'}` — `null` désactive, il ne fige pas à mi-course ;
   - sur une animation Reanimated écrite à la main, ajouter `reduceMotion: ReduceMotion.System` à la config du ressort ou du timing ;
   - les animations purement décoratives (le halo du bouton, le point qui bat du compte à rebours) ne sont pas atténuées mais **pas jouées du tout**.
+
+## La vidéo de l'accueil
+
+Le fond de l'accueil est une vidéo (`expo-video`, livré avec Expo Go — pas de
+build natif nécessaire). Trois choses à ne pas défaire :
+
+- **La photo reste sous la vidéo, et ce n'est pas un reliquat.** Elle sert
+  d'affiche pendant le chargement — sans elle, on voit un rectangle noir au
+  démarrage — et de repli quand les animations système sont coupées. La vidéo
+  n'apparaît en fondu qu'au statut `readyToPlay`.
+- **`surfaceType="textureView"` est obligatoire.** Le défaut Android
+  (`surfaceView`) dessine la vidéo dans sa propre couche : elle passerait
+  **au-dessus** des dégradés, du titre et des boutons.
+- **Le voile est à 0,32, pas à 0,20.** Sur une photo fixe et sombre, 20 %
+  suffisaient. Sur une vidéo, des visages et un feu passent là où se pose le
+  texte : le voile et l'ombre portée de l'accroche sont ce qui garantit la
+  lisibilité quel que soit le plan. Ne pas les alléger pour « mieux voir la
+  vidéo ».
+
+Quand `useReducedMotion()` est vrai, la source du lecteur est mise à `null` :
+le fichier n'est même pas chargé, conformément à la convention du projet
+(une animation décorative n'est pas atténuée, elle n'est pas jouée).
 
 ## Pièges connus
 
