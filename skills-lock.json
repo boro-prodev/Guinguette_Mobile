@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "skills": {
+    "react-native-expert": {
+      "source": "jeffallan/claude-skills",
+      "sourceType": "github",
+      "skillPath": "skills/react-native-expert/SKILL.md",
+      "computedHash": "9a44b99fc929ab8e470944b5c6c5955dea6ea0945778816680acfcaaccb5a622"
+    },
+    "tamagui": {
+      "source": "tamagui/tamagui",
+      "sourceType": "github",
+      "skillPath": "plans/tamagui-skill/skills/tamagui/SKILL.md",
+      "computedHash": "9e8ed075277823b5e5779ae8780a38c10b2226df894355c507385e1d29de3fa9"
+    }
+  }
+}

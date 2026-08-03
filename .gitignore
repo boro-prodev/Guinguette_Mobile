@@ -1,0 +1,56 @@
+# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
+
+# dependencies
+node_modules/
+
+# Expo
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+
+# Native
+.kotlin/
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# Metro
+.metro-health-check*
+
+# debug
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# macOS
+.DS_Store
+*.pem
+
+# local env files
+.env
+.env.*
+!.env.example
+
+# Claude Code — réglages propres à la machine
+.claude/settings.local.json
+
+# Skills : contenu TIERS, et surtout des jonctions Windows qui pointent hors du
+# dépôt (`.agents/skills/better-typography` → C:\Users\<moi>\.agents\...).
+# Git les suivrait et publierait le contenu du dossier personnel. Leur
+# provenance est enregistrée dans `skills-lock.json`, qui suffit à les refaire.
+.agents/
+.claude/skills/
+
+# Windows / Git Bash
+*.stackdump
+
+# typescript
+*.tsbuildinfo
+
+# generated native folders
+/ios
+/android

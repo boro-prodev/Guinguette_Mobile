@@ -1,0 +1,45 @@
+{
+  "expo": {
+    "name": "La Guinguette de Oignies",
+    "slug": "guinguette-oignies",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "scheme": "guinguette",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "be.guinguette.oignies"
+    },
+    "android": {
+      "package": "be.guinguette.oignies",
+      "adaptiveIcon": {
+        "backgroundColor": "#F2EAD9",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-font",
+      "expo-image",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 180,
+          "resizeMode": "contain",
+          "backgroundColor": "#16283A"
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
