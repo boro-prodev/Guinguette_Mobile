@@ -43,7 +43,7 @@ ne soit pas reposée trois semaines plus tard.
 
 | # | Chantier | État | Pourquoi à ce moment-là |
 |---|---|---|---|
-| **1a + 1c** | Accueil — guirlande rognée **et** les deux appels à l'action | ✅ **prêt** | **Une seule passe** : les deux touchent le rythme vertical du bas de l'accueil. 1c a été ajouté le 3 août 2026 ; sa direction se tranche à l'écran. |
+| **1a + 1d + 1c** | Accueil — guirlande, réglages vidéo, puis les deux appels à l'action | ✅ **prêt** | **Une seule passe, dans cet ordre.** 1a et 1c touchent le rythme vertical du bas d'écran ; 1d fixe le fond, et les boutons ne se jugent pas sur un fond qui va encore bouger. |
 | **2** | Soirées — les pépites | ✅ **prêt** | La plus grosse refonte, mais elle est *structurelle* (disposition, gestes) : un changement de police plus tard demandera de réajuster des tailles, pas de tout refaire. |
 | **3** | La Carte — fiches repliées | ✅ **prêt** | Réutilise le motif validé en 2. Beaucoup moins risqué une fois 2 fait. |
 | **4** | Mouvement — pression du bouton, ouverture de la feuille | ✅ **prêt** | Ajouté le 3 août 2026. Indépendant des autres, mais **transverse** : touche LE bouton et la feuille, donc tous les écrans. À faire quand le reste est stable. |
@@ -211,12 +211,14 @@ vérifie à chaque changement de police.
 
 # Chantier 1 — Accueil
 
-Trois points sur le même écran. **1b est fait** (3 août 2026) ; restent **1a**
-(bug d'affichage) et **1c** (reprise de conception).
+Quatre points sur le même écran. **1b est fait** (3 août 2026) ; restent **1a**
+(bug d'affichage), **1d** (réglages de la vidéo de fond) et **1c** (reprise de
+conception des boutons).
 
-**1a et 1c se traitent en une seule passe** : tous deux touchent la zone basse de
-l'accueil, et les corriger séparément ferait régler deux fois le même rythme
-vertical.
+**Les trois se traitent en une seule passe, dans l'ordre 1a → 1d → 1c** : 1a et
+1c touchent tous deux le rythme vertical du bas d'écran, et 1d fixe le fond —
+juger la hiérarchie des boutons sur un fond encore mouvant, c'est trancher deux
+fois.
 
 ## 1a. Les ampoules de la guirlande sont rognées ✅ prêt
 
@@ -309,6 +311,54 @@ exactement pour ce contexte « sur photo sombre ». Cible tactile ≥ 44 px et
 
 **Ce que ça touche :** `app/(tabs)/index.tsx` (les appelants), et selon la
 direction retenue `components/ui/Button.tsx` ou le thème `light_lampion`.
+
+⚠️ **À faire après 1d, pas avant.** Les deux boutons se détachent différemment
+sur une vidéo que sur une photo fixe : arbitrer leur hiérarchie sur un fond qui
+va peut-être encore changer, c'est trancher deux fois.
+
+## 1d. La vidéo de fond — trois réglages laissés ouverts ✅ prêt
+
+**Contexte :** l'accueil tourne sur `assets/videos/accueil.mp4` depuis le 3 août
+2026 (`expo-video`, livré avec Expo Go). Ça marche et l'effet est là. Restent
+trois points que je n'ai pas voulu trancher seul.
+
+### a. Le voile est un compromis, pas un réglage définitif
+
+La photo fixe était sombre au centre, exactement là où se posent le titre et
+l'accroche : **20 %** de voile suffisaient. La vidéo y fait défiler des visages,
+un feu, des lampions — l'accroche devenait difficile à lire. Le voile est monté
+à **0,32** et l'accroche a gagné l'ombre portée du titre (son `opacity: 0.9` a
+sauté au passage : atténuer un texte sur fond mouvant est le contraire de ce
+qu'il faut faire).
+
+**C'est le premier chiffre à bouger si la vidéo paraît trop assagie** — en
+gardant en tête que c'est lui qui tient la lisibilité sur les plans clairs.
+
+**Piste plus fine, si 0,32 déçoit :** remplacer le voile *global* par un écran
+local derrière le seul bloc de texte — un dégradé vertical centré sur la zone
+titre + accroche. La vidéo garderait toute sa vivacité en haut et en bas, et le
+texte son fond garanti. Plus de travail, meilleur résultat.
+
+### b. La vidéo continue de tourner quand on change d'onglet
+
+Les quatre écrans sont des onglets : l'accueil **reste monté** quand on passe à
+La Carte. Le lecteur n'est jamais mis en pause — la vidéo décode donc en continu,
+pour rien, tant que l'app est ouverte. Sur un téléphone réel, ça se paie en
+batterie et en chauffe.
+
+**Correctif :** mettre en pause quand l'écran perd le focus, reprendre quand il
+le retrouve — `useFocusEffect` (Expo Router) autour de `player.pause()` /
+`player.play()`. Non fait, et non mesuré : à vérifier sur appareil réel, pas sur
+émulateur, où la consommation ne veut rien dire.
+
+### c. Le poids et le format n'ont pas été regardés
+
+2,4 Mo pour une boucle de fond, embarqués dans le bundle. Ni la durée, ni la
+résolution, ni le débit n'ont été examinés — le fichier était là, je l'ai utilisé
+tel quel. Une passe d'encodage (résolution plafonnée à la taille d'écran, débit
+réduit, boucle raccourcie) l'allégerait sans doute beaucoup.
+
+**Ce que ça touche :** `app/(tabs)/index.tsx`, `assets/videos/accueil.mp4`.
 
 ---
 
@@ -610,6 +660,7 @@ se voit plus en release.
 | 7 | **Garde-t-on le halo du bouton ?** C'est la signature « ampoule », mais c'est aussi ce qui coûte un montage par appui | Chantier 4 | Oui — se tranche en le voyant allégé |
 | 8 | **Le « freeze » survit-il à un build de production ?** À mesurer au moniteur de performance avant d'optimiser | Chantier 4 | Non — c'est la première étape du chantier |
 | 9 | **L'accroche de La Carte passe à 3 lignes sur 360 px.** Raccourcir, aligner à gauche, ou assumer ? | Chantier 3 | Oui — à l'écriture de la copie |
+| 10 | **Voile global à 0,32, ou écran local derrière le seul bloc de texte ?** Le second garde la vidéo vive en haut et en bas | Chantier 1d | Oui — se juge à l'écran |
 
 ---
 
