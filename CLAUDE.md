@@ -7,10 +7,6 @@ Application React Native (Expo) pour une guinguette à Viroinval (Belgique).
 le détail vit dans `.claude/rules/`, à ouvrir selon ce qu'on touche (voir
 l'index plus bas). Ce qui est *prévu* mais pas encore fait vit dans `ROADMAP.md`.
 
-**Projet jumeau :** le site web vit dans `../Guinguette_Web` (Vite + Tailwind).
-Les deux projets sont **indépendants** — aucune dépendance de code, aucun fichier
-partagé. Toute synchronisation est manuelle et volontaire.
-
 ## Nature du projet — À LIRE EN PREMIER
 
 Cette application est un **modèle de démonstration**, pas (encore) une app de

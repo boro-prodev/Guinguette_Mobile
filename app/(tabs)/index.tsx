@@ -14,12 +14,12 @@
  * convention du projet — une animation purement décorative n'est pas
  * atténuée, elle n'est pas jouée.
  */
-import { useEvent } from 'expo';
+import { useEvent, useEventListener } from 'expo';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useVideoPlayer, VideoView } from 'expo-video';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
@@ -43,18 +43,30 @@ const AMBIANCE_VIDEO = require('../../assets/videos/accueil.mp4');
 /** Durée du fondu photo → vidéo. Assez long pour ne pas se voir comme une coupe. */
 const CROSSFADE_MS = 700;
 
+/** Apparition des deux appels à l'action, une fois l'ouverture terminée. */
+const ACTIONS_FADE_MS = 550;
+
 export default function HomeScreen() {
   const { open } = useReserve();
   const insets = useSafeAreaInsets();
   const reduceMotion = useReducedMotion();
   const scale = useSharedValue(1.08);
   const videoOpacity = useSharedValue(0);
+  const actionsOpacity = useSharedValue(0);
+
+  /**
+   * L'ouverture est jouée, ou elle ne le sera pas. Dans les deux cas les
+   * boutons deviennent disponibles — jamais d'écran sans appel à l'action.
+   */
+  const [introDone, setIntroDone] = useState(false);
 
   // `useVideoPlayer` est un hook : il s'appelle toujours. C'est la SOURCE qu'on
   // met à `null` quand les animations sont coupées — ainsi le fichier n'est
   // même pas chargé.
   const player = useVideoPlayer(reduceMotion ? null : AMBIANCE_VIDEO, (instance) => {
-    instance.loop = true;
+    // Pas de boucle : c'est une ouverture, elle passe une fois. Elle s'arrête
+    // ensuite sur sa dernière image, qui devient le fond fixe de l'écran.
+    instance.loop = false;
     instance.muted = true;
   });
 
@@ -73,6 +85,35 @@ export default function HomeScreen() {
     });
   }, [player, videoOpacity, videoReady]);
 
+  // Fin de l'ouverture : on met en pause pour libérer le décodeur — sans ça il
+  // continue de tourner tant que l'écran reste monté, et les onglets le
+  // gardent monté en permanence.
+  useEventListener(player, 'playToEnd', () => {
+    player.pause();
+    setIntroDone(true);
+  });
+
+  // Animations coupées : pas de vidéo, donc rien à attendre.
+  useEffect(() => {
+    if (reduceMotion) setIntroDone(true);
+  }, [reduceMotion]);
+
+  // Filet de sécurité : si la vidéo ne peut pas être lue, les boutons
+  // apparaissent quand même. Un fond décoratif ne doit jamais pouvoir retenir
+  // l'action principale de l'écran en otage.
+  useEffect(() => {
+    if (status === 'error') setIntroDone(true);
+  }, [status]);
+
+  useEffect(() => {
+    if (!introDone) return;
+    actionsOpacity.value = withTiming(1, {
+      duration: ACTIONS_FADE_MS,
+      easing: Easing.out(Easing.quad),
+      reduceMotion: ReduceMotion.System,
+    });
+  }, [actionsOpacity, introDone]);
+
   // Équivalent de @keyframes hero-zoom : la photo se pose lentement.
   useEffect(() => {
     scale.value = withTiming(1, {
@@ -87,6 +128,7 @@ export default function HomeScreen() {
   }));
 
   const videoStyle = useAnimatedStyle(() => ({ opacity: videoOpacity.value }));
+  const actionsStyle = useAnimatedStyle(() => ({ opacity: actionsOpacity.value }));
 
   return (
     <View style={styles.screen}>
@@ -154,7 +196,22 @@ export default function HomeScreen() {
           <Text style={styles.tagline}>{venue.tagline}</Text>
         </Reveal>
 
-        <Reveal delay={450} style={styles.actions}>
+        {/*
+          Les deux boutons n'apparaissent qu'à la fin de l'ouverture — mais le
+          bloc, lui, reste monté du premier rendu. C'est ce qui réserve sa
+          hauteur : le monter à la fin de la vidéo ferait remonter d'un coup le
+          titre et l'accroche, centrés dans l'espace restant.
+
+          Tant que l'ouverture n'est pas finie, ils sont invisibles, hors
+          d'atteinte du doigt (`pointerEvents`) ET des lecteurs d'écran — un
+          bouton transparent qu'on peut quand même activer est un piège.
+        */}
+        <Animated.View
+          style={[styles.actions, actionsStyle]}
+          pointerEvents={introDone ? 'auto' : 'none'}
+          accessibilityElementsHidden={!introDone}
+          importantForAccessibility={introDone ? 'auto' : 'no-hide-descendants'}
+        >
           <Button
             size="lg"
             full
@@ -179,7 +236,7 @@ export default function HomeScreen() {
           >
             Prochaines soirées
           </Button>
-        </Reveal>
+        </Animated.View>
       </View>
     </View>
   );

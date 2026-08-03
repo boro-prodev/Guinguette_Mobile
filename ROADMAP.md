@@ -319,8 +319,12 @@ va peut-être encore changer, c'est trancher deux fois.
 ## 1d. La vidéo de fond — trois réglages laissés ouverts ✅ prêt
 
 **Contexte :** l'accueil tourne sur `assets/videos/accueil.mp4` depuis le 3 août
-2026 (`expo-video`, livré avec Expo Go). Ça marche et l'effet est là. Restent
-trois points que je n'ai pas voulu trancher seul.
+2026 (`expo-video`, livré avec Expo Go). Depuis le même jour, c'est une
+**ouverture** : la vidéo passe une fois, s'arrête sur sa dernière image, et les
+deux appels à l'action n'apparaissent qu'ensuite.
+
+Restent deux points ouverts sur trois — le second s'est réglé tout seul avec ce
+changement.
 
 ### a. Le voile est un compromis, pas un réglage définitif
 
@@ -339,24 +343,26 @@ local derrière le seul bloc de texte — un dégradé vertical centré sur la z
 titre + accroche. La vidéo garderait toute sa vivacité en haut et en bas, et le
 texte son fond garanti. Plus de travail, meilleur résultat.
 
-### b. La vidéo continue de tourner quand on change d'onglet
+### ~~b. La vidéo continue de tourner quand on change d'onglet~~ ✅ réglé
 
-Les quatre écrans sont des onglets : l'accueil **reste monté** quand on passe à
-La Carte. Le lecteur n'est jamais mis en pause — la vidéo décode donc en continu,
-pour rien, tant que l'app est ouverte. Sur un téléphone réel, ça se paie en
-batterie et en chauffe.
+Réglé le 3 août 2026 par le passage en **ouverture** : la boucle a sauté, la
+vidéo passe une fois et `player.pause()` est appelé sur `playToEnd`. Le lecteur
+retombe en `STOPPED` — vérifié au `logcat` — et n'y revient pas, puisque
+l'accueil reste monté et que l'ouverture ne rejoue pas.
 
-**Correctif :** mettre en pause quand l'écran perd le focus, reprendre quand il
-le retrouve — `useFocusEffect` (Expo Router) autour de `player.pause()` /
-`player.play()`. Non fait, et non mesuré : à vérifier sur appareil réel, pas sur
-émulateur, où la consommation ne veut rien dire.
+Il n'y a donc plus de décodage continu à couper. Un `useFocusEffect` reste
+inutile en l'état.
 
-### c. Le poids et le format n'ont pas été regardés
+### c. Le débit du fichier est très élevé
 
-2,4 Mo pour une boucle de fond, embarqués dans le bundle. Ni la durée, ni la
-résolution, ni le débit n'ont été examinés — le fichier était là, je l'ai utilisé
-tel quel. Une passe d'encodage (résolution plafonnée à la taille d'écran, débit
-réduit, boucle raccourcie) l'allégerait sans doute beaucoup.
+Mesuré le 3 août 2026 dans l'atome `mvhd` : **5,0 s**, **2,34 Mo**, soit
+**~3 900 kbit/s**. C'est trois à quatre fois ce qu'il faudrait pour un fond
+d'écran de téléphone.
+
+Une passe d'encodage (résolution plafonnée à la taille d'écran, débit ramené
+vers 1 000–1 500 kbit/s) diviserait le poids par deux ou trois sans différence
+visible derrière un voile à 32 %. La durée de 5 s, elle, est bonne : assez pour
+poser une ambiance, assez court pour ne pas faire attendre devant les boutons.
 
 **Ce que ça touche :** `app/(tabs)/index.tsx`, `assets/videos/accueil.mp4`.
 

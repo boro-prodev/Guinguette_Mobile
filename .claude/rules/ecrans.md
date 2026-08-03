@@ -48,10 +48,31 @@ devinent. La convention du projet :
 Pour tester : `adb shell settings put global animator_duration_scale 0`
 (et `transition_animation_scale`, `window_animation_scale`), puis remettre à `1`.
 
-## La vidéo de l'accueil
+## La vidéo de l'accueil — une ouverture, pas une boucle
 
-Le fond de l'accueil est une vidéo (`expo-video`, livré avec Expo Go — pas de
-build natif nécessaire). **Trois choses à ne pas défaire :**
+Le fond de l'accueil est une vidéo de 5 s (`expo-video`, livré avec Expo Go —
+pas de build natif nécessaire). Elle **passe une seule fois**, s'arrête sur sa
+dernière image, et c'est cette image qui devient le fond fixe de l'écran.
+
+**Les deux appels à l'action n'apparaissent qu'à la fin de l'ouverture.** Trois
+règles encadrent ce séquencement :
+
+- **Le bloc des boutons reste monté du premier rendu**, à opacité 0. C'est ce
+  qui réserve sa hauteur : le monter à la fin de la vidéo ferait remonter d'un
+  coup le titre et l'accroche, centrés dans l'espace restant.
+- **Invisible veut dire inatteignable** : `pointerEvents="none"` *et*
+  `accessibilityElementsHidden` tant que l'ouverture tourne. Un bouton
+  transparent qu'on peut quand même activer est un piège.
+- **Trois sorties garantissent que les boutons finissent toujours par
+  apparaître** : la fin normale (`playToEnd`), les animations coupées
+  (`reduceMotion`, la vidéo n'est alors jamais chargée) et l'échec de lecture
+  (`status === 'error'`). Un fond décoratif ne doit jamais pouvoir retenir
+  l'action principale de l'écran en otage.
+
+L'ouverture se joue **une fois par session** : les écrans étant des onglets,
+l'accueil reste monté, donc revenir dessus depuis La Carte ne la rejoue pas.
+
+**Trois choses à ne pas défaire non plus :**
 
 - **La photo reste sous la vidéo, et ce n'est pas un reliquat.** Elle sert
   d'affiche pendant le chargement — sans elle, on voit un rectangle noir au
@@ -69,6 +90,5 @@ build natif nécessaire). **Trois choses à ne pas défaire :**
 Quand `useReducedMotion()` est vrai, la **source du lecteur est mise à `null`** :
 le fichier n'est même pas chargé.
 
-⚠️ **Dette connue** : la vidéo n'est pas mise en pause quand on change d'onglet.
-Les écrans étant des onglets, l'accueil reste monté et le décodage continue.
-Voir chantier 1d.
+`player.pause()` est appelé sur `playToEnd` — sans ça le décodeur continue de
+tourner tant que l'écran est monté, c'est-à-dire toute la session.
