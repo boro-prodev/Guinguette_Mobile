@@ -26,7 +26,8 @@ Soirées, Carte ou Accueil, et avant de toucher aux polices.
 - Expo SDK 57 · React Native 0.86 · **Expo Router** (onglets) · TypeScript strict · Reanimated 4 + Gesture Handler · **Tamagui 2** (design system).
 - `npm start` (Metro / Expo Go) · `npm run android` · `npm run ios`.
 - Vérification standard après modification : `npx tsc --noEmit`, puis `npx expo-doctor`, puis contrôle visuel sur émulateur ou Expo Go.
-- Pas de tests, pas de linter configurés. **Pas de dépôt git** : le projet vit en local, en zone de test.
+- Pas de tests, pas de linter configurés.
+- **Dépôt git depuis le 3 août 2026** : `boro-prodev/Guinguette_Mobile` sur GitHub, **privé**, branche `main`.
 
 ## Structure
 
@@ -158,3 +159,4 @@ relancer une).
 - `npx expo-doctor` signale en permanence deux échecs **attendus** : les écarts de version (le pinning est volontaire, voir plus haut) et un doublon `expo-font` qu'`expo` embarque lui-même. Ni l'un ni l'autre ne vient du code.
 - Le projet vit sous `C:\Users\jonat\source\repos\Guinguette_Mobile` — **pas** sous OneDrive (une ancienne version de ce fichier l'indiquait à tort).
 - `.claude/skills/react-native-expert` est une **copie** de `.agents/skills/react-native-expert`, pas un lien symbolique (le mode développeur Windows n'était pas actif à la création). Modifier `.agents/` implique de recopier.
+- **Les skills ne sont pas versionnés, et c'est volontaire.** `.agents/` et `.claude/skills/` sont exclus du dépôt : ce sont des contenus tiers, et surtout `.agents/skills/better-typography` est une **jonction Windows vers `C:\Users\<toi>\.agents\`** — git la suivrait et publierait un morceau du dossier personnel. Leur provenance est enregistrée dans `skills-lock.json`, qui est versionné et suffit à les réinstaller. Même logique pour `.claude/settings.local.json`, propre à la machine.
