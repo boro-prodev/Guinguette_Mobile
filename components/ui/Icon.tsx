@@ -27,7 +27,9 @@ export type IconName =
   | 'clock'
   | 'directions'
   | 'chevron'
-  | 'link';
+  | 'link'
+  | 'instagram'
+  | 'facebook';
 
 type IconProps = {
   name: IconName;
@@ -122,6 +124,17 @@ const PATHS: Record<IconName, React.ReactNode> = {
       <Path d="M15 3h6v6" />
       <Path d="m21 3-11 11" />
     </G>
+  ),
+  instagram: (
+    <G>
+      <Rect x={3.5} y={3.5} width={17} height={17} rx={5} />
+      <Circle cx={12} cy={12} r={4.2} />
+    </G>
+  ),
+  // Marque simplifiée au trait, dans le même esprit que les autres icônes —
+  // pas un logo plein.
+  facebook: (
+    <Path d="M15 3h-2a4 4 0 0 0-4 4v3H7v4h2v7h4v-7h2.8l.7-4H13V7a1 1 0 0 1 1-1h1V3Z" />
   ),
 };
 

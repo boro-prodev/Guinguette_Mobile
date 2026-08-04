@@ -52,16 +52,6 @@ export type GuinguetteEvent = {
   taken: number;
   image: ImageSourcePropType;
   alt: string;
-  /**
-   * Coché par l'exploitant pour faire apparaître la soirée dans « Les
-   * pépites » — jamais déduit d'une règle automatique (cf. ROADMAP.md,
-   * chantier 2).
-   */
-  pepite: boolean;
-  /** Site ou réseau social de l'artiste. Laissé vide tant qu'aucune URL
-   *  réelle n'est fournie : la pastille de lien s'affiche alors désactivée
-   *  plutôt que de risquer un lien mort en démo. */
-  artistUrl?: string;
 };
 
 const FRIDAY = 5;
@@ -101,7 +91,6 @@ function buildEvents(today: Date): GuinguetteEvent[] {
       taken: 63,
       image: require('../assets/images/programmation_01.webp'),
       alt: 'Concert live à la guinguette',
-      pepite: false,
     },
     {
       id: 'bal-populaire-ete',
@@ -125,7 +114,6 @@ function buildEvents(today: Date): GuinguetteEvent[] {
       taken: 88,
       image: require('../assets/images/ambiance-soiree.webp'),
       alt: 'Grand bal populaire sous les lampions',
-      pepite: true,
     },
     {
       id: 'soiree-guinguette-tapas',
@@ -148,7 +136,6 @@ function buildEvents(today: Date): GuinguetteEvent[] {
       taken: 41,
       image: require('../assets/images/programmation_02.webp'),
       alt: 'Soirée guinguette et tapas en terrasse',
-      pepite: true,
     },
   ];
 

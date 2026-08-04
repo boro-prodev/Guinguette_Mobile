@@ -40,6 +40,12 @@ auprès du même arbitrage tactile que `SwipeTabsArea` et referme le trou. La
 rangée de filtres de La Carte n'a jamais eu ce problème : elle est imbriquée
 dans une `FlatList`, pas un `ScrollView`.
 
+Ce `ScrollView` (et le reste de la mécanique de carrousel — index actif,
+garde-fou, pastilles) vit désormais dans `components/features/
+PosterCarousel.tsx`, partagé par les deux carrousels de l'écran Soirées
+(« À l'affiche », « Artist Spot ») : le contournement n'est à connaître
+qu'une fois, pas à redécouvrir à chaque nouveau carrousel.
+
 ## Listes
 
 Les listes passent par **`FlatList`** (jamais `ScrollView`) et leurs éléments

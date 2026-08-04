@@ -1,19 +1,19 @@
 /**
- * Soirées & Bal — deux carrousels du même composant : « À l'affiche »
- * (toute la programmation) et « Les pépites » (sélection manuelle de
- * l'exploitant, cf. `data/events.ts`).
+ * Soirées & Bal — deux carrousels : « À l'affiche » (toute la programmation)
+ * et « Artist Spot » (les artistes déjà venus ou à venir, `data/artists.ts`).
+ * Même mécanique d'interaction pour les deux (voir `PosterCarousel.tsx`).
  */
-import { useMemo } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import { ArtistSpotlight } from '@/components/features/ArtistSpotlight';
 import { EventSpotlight } from '@/components/features/EventSpotlight';
 import { Reveal } from '@/components/ui/Reveal';
 import { colors, spacing, type } from '@/constants/theme';
+import { artists } from '@/data/artists';
 import { events } from '@/data/events';
 import { NBSP } from '@/utils/text';
-export default function SoireesScreen() {
-  const pepites = useMemo(() => events.filter((event) => event.pepite), []);
 
+export default function SoireesScreen() {
   return (
     <ScrollView
       contentContainerStyle={styles.list}
@@ -37,11 +37,9 @@ export default function SoireesScreen() {
         <EventSpotlight kicker="À l’affiche" events={events} />
       </Reveal>
 
-      {pepites.length > 0 && (
-        <Reveal delay={400} fadeOnly style={styles.spotlight}>
-          <EventSpotlight kicker="Les pépites" events={pepites} />
-        </Reveal>
-      )}
+      <Reveal delay={400} fadeOnly style={styles.spotlight}>
+        <ArtistSpotlight kicker="Artist Spot" artists={artists} />
+      </Reveal>
     </ScrollView>
   );
 }

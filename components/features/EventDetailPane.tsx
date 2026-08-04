@@ -1,19 +1,22 @@
 /**
- * Panneau d'informations d'une soirée, déplié depuis `EventSpotlight` au tap
- * sur l'affiche active. Contenu migré de l'ancien `EventCard` (supprimé au
+ * Panneau d'informations d'une soirée, toujours affiché sous l'affiche active
+ * dans `EventSpotlight`. Contenu migré de l'ancien `EventCard` (supprimé au
  * chantier 2) : même mise en page, sans le titre ni l'artiste — déjà visibles
- * en permanence sur l'affiche, repliée comme dépliée — et sans le second
- * niveau de repli du programme : le tap qui ouvre ce panneau joue déjà ce
- * rôle, un second toggle imbriqué ferait doublon.
+ * en permanence sur l'affiche — et sans second niveau de repli pour le
+ * programme.
  *
- * Le bouton « J'y serai » SIMULÉ : la participation bascule localement
+ * Le lien vers l'artiste vit désormais dans « Artist Spot »
+ * (`ArtistDetailPane`) : ce panneau-ci ne parle que de la soirée.
+ *
+ * Le bouton « Participer » SIMULÉ : la participation bascule localement
  * (AsyncStorage `demo:rsvp:*`) et déclenche un toast. Rien n'est envoyé.
  */
 import { memo, useCallback } from 'react';
-import { Linking, StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native';
 import Animated, { FadeIn, FadeOut, ReduceMotion, useReducedMotion } from 'react-native-reanimated';
-import { styled, Text, Theme, View, XStack, YStack } from 'tamagui';
+import { styled, Text, Theme, XStack, YStack } from 'tamagui';
 
+import { Body, Pane } from '@/components/features/PosterCarousel';
 import { SeatsGauge } from '@/components/features/SeatsGauge';
 import { useToast } from '@/components/toast/ToastProvider';
 import { Button } from '@/components/ui/Button';
@@ -21,23 +24,6 @@ import { Icon } from '@/components/ui/Icon';
 import { colors, shadows, tabularNums, type } from '@/constants/theme';
 import type { GuinguetteEvent } from '@/data/events';
 import { useDemoFlag } from '@/hooks/useDemoFlag';
-
-const Pane = styled(View, {
-  name: 'EventDetailPane',
-  backgroundColor: '$backgroundStrong',
-  borderRadius: '$md',
-  overflow: 'hidden',
-  padding: '$md',
-  gap: '$sm',
-});
-
-const Body = styled(Text, {
-  name: 'EventBody',
-  fontFamily: '$body',
-  fontSize: '$2',
-  lineHeight: '$2',
-  color: '$muted',
-});
 
 const StepTime = styled(Text, {
   name: 'EventStepTime',
@@ -89,10 +75,6 @@ function EventDetailPaneComponent({ event }: EventDetailPaneProps) {
     );
   }, [showToast, toggle]);
 
-  const handleArtistLink = useCallback(() => {
-    if (event.artistUrl) Linking.openURL(event.artistUrl);
-  }, [event.artistUrl]);
-
   return (
     // Le thème de la soirée peint tout le panneau — et bascule au vert dès
     // que la participation est annoncée, comme sur l'ancienne carte.
@@ -120,22 +102,7 @@ function EventDetailPaneComponent({ event }: EventDetailPaneProps) {
 
           <SeatsGauge capacity={event.capacity} taken={event.taken} />
 
-          <XStack alignItems="center" justifyContent="space-between" gap="$sm">
-            <PriceTag>{event.price}</PriceTag>
-
-            <Button
-              tone="ghost"
-              size="sm"
-              circular
-              disabled={!event.artistUrl}
-              accessibilityLabel={
-                event.artistUrl ? `Voir la page de ${event.artist}` : 'Lien artiste indisponible'
-              }
-              onPress={handleArtistLink}
-            >
-              <Button.Icon name="link" />
-            </Button>
-          </XStack>
+          <PriceTag>{event.price}</PriceTag>
 
           <Button full accessibilityState={{ selected: enabled }} onPress={handleRsvp}>
             {enabled && <Button.Icon name="check" />}

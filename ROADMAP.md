@@ -41,6 +41,23 @@
 > le `ScrollView` vertical de l'écran se fait parfois voler son geste par le
 > swipe d'onglets, *silencieusement* ; le contournement est d'importer ce
 > `ScrollView` depuis `react-native-gesture-handler`.
+> **Mise à jour du 4 août 2026 (nuit, suite)** — En testant le chantier 2,
+> Jonathan a trouvé mieux : le panneau reste désormais **toujours affiché**
+> sous l'affiche active, sans tap pour le déplier (`toggleExpanded` a
+> disparu). « Les pépites » est remplacé entièrement par **« Artist Spot »**
+> (nom anglais voulu tel quel) : une galerie des artistes déjà venus ou à
+> venir (`data/artists.ts`, nouveau), chacun relié à sa soirée
+> (`Artist.eventId`), avec bio, style musical et liens (site, Instagram,
+> Facebook — deux icônes ajoutées à `Icon.tsx`). Son panneau ne montre que la
+> fiche artiste, jamais le programme/jauge/tarif/Participer, qui restent
+> propres à « À l'affiche ». La mécanique de carrousel (auparavant dans
+> `EventSpotlight.tsx`) est désormais partagée par les deux sections via
+> `components/features/PosterCarousel.tsx`. Piège trouvé au passage : le
+> compte à rebours (`utils/date.ts`) ne sait pas parler du passé — il
+> affiche « C'est maintenant ! » indéfiniment une fois la date dépassée —
+> donc `ArtistSpotlight` ne l'affiche que pour une soirée à venir.
+> `GuinguetteEvent.pepite` et `.artistUrl` ont disparu, remplacés par
+> `Artist`. Détail du chantier 2, plus bas, mis à jour en conséquence.
 > **Le reste de ce document n'est pas implémenté.** C'est un plan de travail, pas
 > un compte rendu. L'état réel de l'app est décrit dans `CLAUDE.md`.
 
@@ -70,7 +87,7 @@ ne soit pas reposée trois semaines plus tard.
 | **1a** | Accueil — guirlande rognée | 4 août 2026 | Le `viewBox` élargi ne suffisait pas seul à écarter la guirlande du jambage du « g » : `marginTop` est passé de `spacing.sm` à `spacing.snug`, vérifié à l'écran. |
 | **1d.c** | Accueil — débit de la vidéo | 4 août 2026 | Ré-encodée à 768×576, ~1290 kbit/s : 2,45 Mo → 782 Kio (÷3,1). Qualité vérifiée à l'écran, aucune perte perceptible derrière le voile. |
 | **1c** | Accueil — hiérarchie des deux boutons | 4 août 2026 | Verre (`tone="glass"`) + anneau ambré permanent qui bat (`emphasis`) sur le bouton principal. Deux ajouts à `Button.tsx` non prévus par ce document — voir le chantier pour le détail et le piège Reanimated rencontré. |
-| **2** | Soirées — les pépites | 4 août 2026 (nuit) | Carrousel swipé (`useSwipeGuard()` + `ScrollView` de `react-native-gesture-handler`), tap pour déplier plutôt qu'avancer, « Les pépites » = sélection manuelle (`pepite: boolean`). `EventCard` a disparu, migré dans `EventDetailPane`. |
+| **2** | Soirées — les pépites | 4 août 2026 (nuit) | Carrousel swipé (`useSwipeGuard()` + `ScrollView` de `react-native-gesture-handler`) ; panneau toujours affiché (le tap-pour-déplier initial a été abandonné le soir même). « Les pépites » a ensuite été remplacé par « Artist Spot » (`data/artists.ts`) — voir la mise à jour du 4 août (nuit, suite) en tête de document. |
 
 ## Ordre conseillé — ce qui reste
 
@@ -510,6 +527,31 @@ EventSpotlight.tsx` (réécrit), `components/features/EventDetailPane.tsx`
 Icon.tsx` (icône `link`), `data/events.ts` (`pepite`, `artistUrl`).
 `components/ui/Button.tsx` **n'a pas changé** — seuls les libellés appelants,
 comme prévu.
+
+### Mise à jour du 4 août 2026 (nuit, suite) — trois points ci-dessus dépassés
+
+En testant l'écran, Jonathan a préféré une autre approche pour deux points de
+ce Résultat — les paragraphes ci-dessus restent comme trace de la première
+version livrée, voici l'état actuel :
+
+- **Le toucher ne déplie plus rien : le panneau est toujours affiché.** Plus
+  de tap-to-expand, plus d'état `expanded`. Le panneau se redémonte à chaque
+  changement de soirée (`key={active.id}`, toujours nécessaire — c'est même
+  la seule chose qui empêche encore le flash d'état RSVP décrit plus haut,
+  maintenant que le `{expanded && ...}` qui le faisait aussi ne existe plus).
+- **« Les pépites » a disparu, remplacé par « Artist Spot »** — une galerie
+  d'artistes (`data/artists.ts`, nouveau), pas une sélection de soirées.
+  `GuinguetteEvent.pepite` est supprimé.
+- **La pastille de lien artiste quitte `EventDetailPane`** : `artistUrl`
+  disparaît de `GuinguetteEvent`, remplacé par les liens (site, Instagram,
+  Facebook) portés par `Artist` dans le nouveau panneau `ArtistDetailPane`.
+- La mécanique de carrousel (le hook d'index/scroll, les styled components
+  de l'affiche, le contournement RNGH) est sortie d'`EventSpotlight.tsx` vers
+  `components/features/PosterCarousel.tsx`, partagée avec `ArtistSpotlight`.
+
+Détail complet dans le chantier « Artist Spot » — pas un chantier numéroté de
+ce document, une demande arrivée après coup, documentée directement dans
+`CLAUDE.md` et `.claude/rules/`.
 
 ## Intention (le besoin d'origine, tel qu'il était formulé)
 

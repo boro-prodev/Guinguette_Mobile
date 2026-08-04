@@ -33,16 +33,22 @@ Chaque soirée porte aussi un `theme` (`primary` | `secondary` | `tertiary`) qui
 peint sa carte entière — c'est **là** qu'on change la couleur d'une soirée, pas
 dans `EventSpotlight`/`EventDetailPane`.
 
-Deux champs de curation manuelle, ajoutés au chantier 2 :
+## `data/artists.ts` : le roster d'« Artist Spot »
 
-- **`pepite: boolean`** — coché par l'exploitant pour faire apparaître la
-  soirée dans la section « Les pépites » de l'écran Soirées. Jamais déduit
-  d'une règle automatique (« tout ce qui n'est pas à l'affiche », etc.) :
-  c'est un choix éditorial, posé ici.
-- **`artistUrl?: string`** — site ou réseau social de l'artiste, ouvert par la
-  pastille de lien du panneau déplié. Laissé vide tant qu'aucune URL réelle
-  n'est fournie : la pastille s'affiche alors désactivée plutôt que de risquer
-  un lien mort en pleine démo client.
+Chaque `Artist` reste relié à une soirée précise de `events.ts` via
+`eventId` — passée ou à venir, la démo simule un vrai calendrier. Cette
+référence alimente le compte à rebours de l'affiche d'Artist Spot ; rien
+n'est dupliqué (pas de `startsAt`/`when` propre à `Artist`).
+
+`website?` / `instagram?` / `facebook?` restent vides tant qu'aucune URL
+réelle n'est fournie : chaque pastille de lien du panneau s'affiche alors
+désactivée plutôt que de risquer un lien mort en pleine démo client — même
+posture que le reste de la démo.
+
+⚠️ Un artiste lié à une soirée **passée** ne doit jamais afficher de compte à
+rebours (`Countdown`) : `utils/date.ts` → `formatCountdown` répond
+« C'est maintenant ! » sans limite de durée une fois `startsAt` dépassé.
+`ArtistSpotlight` ne monte `<Countdown>` que si la soirée liée est à venir.
 
 ## Parcours simulés
 
