@@ -1,8 +1,6 @@
 /**
- * Navigation par onglets — source unique, exactement comme src/nav.js l'était
- * pour le site : les quatre écrans partagent le même header et la même barre
+ * Navigation par onglets : les quatre écrans partagent le même header et la même barre
  * basse, et l'onglet actif est déduit de la route par Expo Router.
- *
  * C'est aussi ici que se décide *comment* on passe d'un écran à l'autre : la
  * transition (`sceneStyleInterpolator`) et le geste (`screenLayout`) sont
  * définis à cet endroit et nulle part ailleurs.

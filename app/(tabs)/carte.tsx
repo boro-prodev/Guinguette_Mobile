@@ -1,6 +1,6 @@
 /**
- * La Carte — liste filtrable par catégorie (port de la-carte.html et de
- * src/menu-filter.js). Les blocs sont rendus par une FlatList unique : filtrer
+ * La Carte — liste filtrable par catégorie.
+ * Les blocs sont rendus par une FlatList unique : filtrer
  * ne fait que réduire les données, la mise en page ne se démonte pas.
  */
 import { useCallback, useMemo, useState } from 'react';

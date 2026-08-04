@@ -1,6 +1,6 @@
 /**
- * Design system « L'Heure Bleue » — port React Native des tokens `@theme`
- * de src/main.css (site web). Source unique des couleurs, de l'échelle
+ * Design system « L'Heure Bleue » 
+ * Source unique des couleurs, de l'échelle
  * typographique et du rythme d'espacement : ne jamais écrire de valeur en dur
  * dans un composant, importer depuis ici.
  */

@@ -1,6 +1,5 @@
 /**
- * Soirées & Bal — programmation et boutons « J'y serai » simulés
- * (port de soirees-bal.html).
+ * Soirées & Bal — programmation et boutons « J'y serai » simulés.
  */
 import { useCallback, useMemo } from 'react';
 import { FlatList, StyleSheet, Text, View, type ListRenderItem } from 'react-native';

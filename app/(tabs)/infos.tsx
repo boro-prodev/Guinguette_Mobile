@@ -1,5 +1,5 @@
 /**
- * Infos Pratiques — adresse, contact et horaires (port de infos-pratiques.html).
+ * Infos Pratiques — adresse, contact et horaires.
  * Contenu court et statique : une ScrollView suffit, pas de liste virtualisée.
  */
 import { Image } from 'expo-image';
