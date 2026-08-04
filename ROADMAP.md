@@ -16,6 +16,17 @@
 > ses halos et ne collide plus avec le jambage du « g » d'Oignies (vérifié à
 > l'écran, sur émulateur). Dans le chantier 1, ne restent ouverts que **1d.c**
 > (débit de la vidéo) et **1c** (hiérarchie des deux boutons).
+> **Mise à jour du 4 août 2026 (soir)** — **1d.c et 1c sont faits.** La vidéo
+> est ré-encodée (÷3,1 sur le poids). La hiérarchie des boutons est passée par
+> plusieurs pistes avant de se fixer : d'abord un simple `tone="soft"` sur le
+> second bouton, puis — à la demande de Jonathan — un essai glassmorphisme
+> devenu la version retenue. `components/ui/Button.tsx` gagne deux ajouts
+> **non prévus par ce document** : `tone="glass"` (flou natif + voile teinté)
+> et `emphasis` (anneau ambré permanent, qui bat). Ni l'un ni l'autre n'existait
+> avant ce chantier ; les deux sont documentés dans
+> `.claude/rules/design-system.md`, y compris un piège Reanimated rencontré en
+> route. Il ne reste ouvert, dans le chantier 1, que **1d.a** (le voile de la
+> vidéo) — voir la question 10 en fin de document.
 > **Le reste de ce document n'est pas implémenté.** C'est un plan de travail, pas
 > un compte rendu. L'état réel de l'app est décrit dans `CLAUDE.md`.
 
@@ -43,12 +54,13 @@ ne soit pas reposée trois semaines plus tard.
 | **0** | Identité typographique | 3 août 2026 | Berkshire Swash remplace Fraunces en display et headline. Les tailles n'ont pas bougé : son plancher (1,242) est à peine au-dessus de celui de Fraunces (1,233). |
 | **1b** | Accueil — « g » de Oignies rogné | 3 août 2026 | Le blocage était infondé : le correctif se déduisait des métriques de la police, sans attendre le chantier 0. |
 | **1a** | Accueil — guirlande rognée | 4 août 2026 | Le `viewBox` élargi ne suffisait pas seul à écarter la guirlande du jambage du « g » : `marginTop` est passé de `spacing.sm` à `spacing.snug`, vérifié à l'écran. |
+| **1d.c** | Accueil — débit de la vidéo | 4 août 2026 | Ré-encodée à 768×576, ~1290 kbit/s : 2,45 Mo → 782 Kio (÷3,1). Qualité vérifiée à l'écran, aucune perte perceptible derrière le voile. |
+| **1c** | Accueil — hiérarchie des deux boutons | 4 août 2026 | Verre (`tone="glass"`) + anneau ambré permanent qui bat (`emphasis`) sur le bouton principal. Deux ajouts à `Button.tsx` non prévus par ce document — voir le chantier pour le détail et le piège Reanimated rencontré. |
 
 ## Ordre conseillé — ce qui reste
 
 | # | Chantier | État | Pourquoi à ce moment-là |
 |---|---|---|---|
-| **1d.c + 1c** | Accueil — débit vidéo, puis les deux appels à l'action | ✅ **prêt** | 1a est fait (4 août), 1d.a et 1d.b aussi (3 août). Restent le ré-encodage vidéo et la hiérarchie des boutons — celle-ci se juge sur un fond désormais stable. |
 | **2** | Soirées — les pépites | ✅ **prêt** | La plus grosse refonte, mais elle est *structurelle* (disposition, gestes) : un changement de police plus tard demandera de réajuster des tailles, pas de tout refaire. |
 | **3** | La Carte — fiches repliées | ✅ **prêt** | Réutilise le motif validé en 2. Beaucoup moins risqué une fois 2 fait. |
 | **4** | Mouvement — pression du bouton, ouverture de la feuille | ✅ **prêt** | Ajouté le 3 août 2026. Indépendant des autres, mais **transverse** : touche LE bouton et la feuille, donc tous les écrans. À faire quand le reste est stable. |
@@ -216,14 +228,9 @@ vérifie à chaque changement de police.
 
 # Chantier 1 — Accueil
 
-Quatre points sur le même écran. **1b est fait** (3 août 2026), **1a** aussi
-(4 août 2026), et **1d** est fait aux deux tiers (1d.a et 1d.b, 3 août 2026) ;
-restent **1d.c** (débit de la vidéo) et **1c** (reprise de conception des
-boutons).
-
-**1d.c et 1c se traitent avant tout dans cet ordre** : juger la hiérarchie des
-boutons sur un fond encore lourd (donc pas encore optimisé), c'est risquer de la
-retrancher une fois 1d.c fait.
+Quatre points sur le même écran. **1a, 1b, 1c, 1d.b et 1d.c sont faits.** Ne
+reste ouvert que **1d.a** (le voile de la vidéo, question 10 en fin de
+document) — un réglage fin, pas un blocage.
 
 ## 1a. Les ampoules de la guirlande sont rognées ✅ fait le 4 août 2026
 
@@ -287,52 +294,103 @@ Les planchers mesurés sont désormais documentés dans
 
 **Fichiers :** `constants/theme.ts`, `tamagui.config.ts`, `app/(tabs)/infos.tsx`
 
-## 1c. Les deux appels à l'action sont à retravailler ✅ prêt
+## 1c. Les deux appels à l'action sont à retravailler ✅ fait le 4 août 2026
+
+## Résultat
+
+**Les deux boutons partagent le même traitement « verre »
+(`tone="glass"`, nouveau) : flou natif (`expo-blur`, livré avec Expo Go)
+derrière un voile teinté par la couleur d'accent du thème courant.** Le rang
+principal ne vient plus de la couleur (les deux sont maintenant en verre) mais
+d'un second ajout, `emphasis` : un anneau ambré **permanent qui bat** autour de
+« Réserver une table » — même mécanique que le point du `Countdown`
+(`withRepeat`/`withTiming`, 1100 ms, `Easing.inOut(Easing.quad)`), posée ici sur
+un anneau plutôt qu'un point.
+
+```tsx
+<Button theme="dusk" tone="glass" size="lg" full emphasis onPress={open}>
+  Réserver une table
+</Button>
+<Button theme="neutral" tone="glass" size="md" onPress={…}>
+  Prochaines soirées
+</Button>
+```
+
+**Trois étapes avant d'arriver là, chacune jugée à l'écran :**
+
+1. **Premier essai, plus sobre :** `tone="soft"` (voile sombre) sur le second
+   bouton plutôt que `outline`, qui se diluait sur les zones claires de la
+   photo. Approuvé par Jonathan, puis dépassé par la demande suivante.
+2. **Glassmorphisme, quatre teintes comparées** (ambre/lampion, terre/primary,
+   nuit/dusk, givré/neutral — toutes tirées des thèmes existants, rien
+   d'inventé). **Nuit** retenue pour le bouton principal, **givré** pour le
+   secondaire.
+3. **Hiérarchie à rétablir :** les deux boutons en verre se ressemblant trop,
+   `emphasis` a été ajouté spécifiquement pour le bouton principal — un anneau
+   ambré plutôt qu'un retour à l'aplat de couleur, pour ne pas sacrifier
+   l'esthétique verre validée à l'étape 2.
+
+**Piège rencontré, documenté dans `.claude/rules/design-system.md` :** poser
+une couleur nouvelle (le liseré du verre) dans le `variant` `tone` d'un cadre
+que Tamagui anime (`transition: 'bouncy'`) fait planter Reanimated
+(« Cannot create property 'onStart' on number '999' » — confusion avec le
+rayon de pilule). Le contournement retenu : le fond et le liseré du verre
+vivent sur un `View` React Native statique, superposé en enfant du bouton,
+jamais dans ses `variants` Tamagui.
+
+**L'entrée des boutons a aussi été reprise** (demande du même jour) : chacun
+porte son propre fondu au lieu d'un fondu unique sur le bloc, minuté sur la
+durée réelle de la vidéo (`player.duration`) plutôt que déclenché après coup.
+Réglages retenus après plusieurs essais de Jonathan à l'écran :
+`PRIMARY_FADE_MS = 2000`, `POST_VIDEO_DELAY_MS = 1500` (le bouton principal
+finit son fondu 1,5 s après la fin de la vidéo), `SECONDARY_FADE_DELAY_MS =
+600` (écart entre les deux boutons), courbe `Easing.elastic(1)`. Toutes ces
+valeurs sont des constantes en tête de `app/(tabs)/index.tsx`, faites pour
+être retouchées facilement.
+
+⚠️ **Contrainte tenue : il n'y a toujours qu'UN bouton dans l'app.** Les deux
+ajouts (`tone="glass"`, `emphasis`) vivent dans `components/ui/Button.tsx`,
+pas dans un composant local ni un `PressableScale` déguisé. Cible tactile
+≥ 44 px inchangée ; `prefers-reduced-motion` coupe le battement de l'anneau
+mais le garde visible, fixe (même convention que le point du `Countdown`).
+
+**Ce que ça a touché :** `components/ui/Button.tsx` (`tone="glass"`,
+`emphasis`, `ButtonGlassFill`, `EmphasisRing`), `constants/theme.ts`
+(`colors.glassEdge`), `app/(tabs)/index.tsx` (les deux appelants, le
+minutage d'entrée par bouton), `.claude/rules/design-system.md` (le nouveau
+ton et le piège Reanimated), `package.json` (`expo-blur`, livré avec Expo
+Go — installé via `npx expo install`, aucun risque pour les versions figées).
+
+## Intention (le besoin d'origine, tel qu'il était formulé)
 
 **Demande de Jonathan, 3 août 2026 :** « Réserver une table » et « Prochaines
 soirées » doivent être repris.
 
-**Ce qu'on voit aujourd'hui (capture du 3 août) :** deux pilules pleine largeur
+**Ce qu'on voyait alors (capture du 3 août) :** deux pilules pleine largeur
 empilées, de géométrie **rigoureusement identique** — même hauteur, même rayon,
-même graisse de libellé. Seules les couleurs les distinguent : terre plein pour
+même graisse de libellé. Seules les couleurs les distinguaient : terre plein pour
 la première, contour ambré sur la photo pour la seconde. Trois conséquences :
 
-- **La hiérarchie entre l'action principale et l'action secondaire est faible.**
-  À taille et forme égales, c'est la seule couleur qui doit porter la différence,
-  et sur une photo chargée elle ne suffit pas toujours.
-- **Le bouton détouré se dilue sur les zones claires de l'image.** Son contour
-  fait 2 px et son texte est blanc ; le voile derrière lui n'est pas garanti.
-- **Le bloc occupe une grande hauteur en bas d'écran**, juste sous une accroche
-  déjà longue.
+- **La hiérarchie entre l'action principale et l'action secondaire était
+  faible.** À taille et forme égales, c'était la seule couleur qui devait
+  porter la différence, et sur une photo chargée elle ne suffisait pas
+  toujours.
+- **Le bouton détouré se diluait sur les zones claires de l'image.** Son
+  contour faisait 2 px et son texte était blanc ; le voile derrière lui
+  n'était pas garanti.
+- **Le bloc occupait une grande hauteur en bas d'écran**, juste sous une
+  accroche déjà longue.
 
-**Encore ouvert — c'est le fond de la demande, et ça n'est pas tranché :** est-ce
-qu'on garde deux boutons de même rang, est-ce qu'on rétrograde le second (lien,
-`tone="ghost"`, taille inférieure), ou est-ce qu'on n'en garde qu'un ? À voir à
-l'écran, sur la photo, comme pour le chantier 0.
-
-⚠️ **Contrainte à ne pas casser : il n'y a qu'UN bouton dans l'app.** Toute
-reprise passe par `components/ui/Button.tsx`, par ses variantes (`tone`, `size`)
-ou par un thème dans `tamagui.config.ts` — **jamais** par un bouton refabriqué
-localement, ni par un `PressableScale` déguisé. Le thème `lampion` existe déjà
-exactement pour ce contexte « sur photo sombre ». Cible tactile ≥ 44 px et
-`prefers-reduced-motion` restent valables.
-
-**Ce que ça touche :** `app/(tabs)/index.tsx` (les appelants), et selon la
-direction retenue `components/ui/Button.tsx` ou le thème `light_lampion`.
-
-⚠️ **À faire après 1d, pas avant.** Les deux boutons se détachent différemment
-sur une vidéo que sur une photo fixe : arbitrer leur hiérarchie sur un fond qui
-va peut-être encore changer, c'est trancher deux fois.
-
-## 1d. La vidéo de fond — trois réglages laissés ouverts ✅ prêt
+## 1d. La vidéo de fond — trois réglages laissés ouverts
 
 **Contexte :** l'accueil tourne sur `assets/videos/accueil.mp4` depuis le 3 août
 2026 (`expo-video`, livré avec Expo Go). Depuis le même jour, c'est une
 **ouverture** : la vidéo passe une fois, s'arrête sur sa dernière image, et les
 deux appels à l'action n'apparaissent qu'ensuite.
 
-Restent deux points ouverts sur trois — le second s'est réglé tout seul avec ce
-changement.
+**b et c sont faits** (le second s'est réglé tout seul avec le passage en
+ouverture) ; **a reste ouvert**, en réglage fin — voir la question 10 en fin de
+document.
 
 ### a. Le voile est un compromis, pas un réglage définitif
 
@@ -361,18 +419,23 @@ l'accueil reste monté et que l'ouverture ne rejoue pas.
 Il n'y a donc plus de décodage continu à couper. Un `useFocusEffect` reste
 inutile en l'état.
 
-### c. Le débit du fichier est très élevé
+### c. Le débit du fichier est très élevé ✅ fait le 4 août 2026
 
-Mesuré le 3 août 2026 dans l'atome `mvhd` : **5,0 s**, **2,34 Mo**, soit
-**~3 900 kbit/s**. C'est trois à quatre fois ce qu'il faudrait pour un fond
-d'écran de téléphone.
+**Mesuré avant :** dans l'atome `mvhd`, **5,0 s**, **2,34 Mo**, soit
+**~3 900 kbit/s** — trois à quatre fois ce qu'il faut pour un fond d'écran de
+téléphone.
 
-Une passe d'encodage (résolution plafonnée à la taille d'écran, débit ramené
-vers 1 000–1 500 kbit/s) diviserait le poids par deux ou trois sans différence
-visible derrière un voile à 32 %. La durée de 5 s, elle, est bonne : assez pour
-poser une ambiance, assez court pour ne pas faire attendre devant les boutons.
+**Ré-encodé avec `ffmpeg`** (installé via `winget`, `Gyan.FFmpeg`) : résolution
+ramenée à **768×576** (contre 1024×768), débit ciblé en deux passes à
+**~1300 kbit/s** (`-maxrate 1500k -bufsize 3000k`). Résultat : **782 Kio**
+(contre 2,45 Mo, ÷3,1), durée inchangée (5,04 s). Qualité vérifiée par
+comparaison d'images extraites avant/après à la même seconde de lecture :
+aucune perte perceptible, y compris à l'œil sur l'émulateur, derrière le voile
+à 32 %.
 
-**Ce que ça touche :** `app/(tabs)/index.tsx`, `assets/videos/accueil.mp4`.
+**Ce que ça a touché :** `assets/videos/accueil.mp4` uniquement — aucun
+changement de code, le fichier se réutilise tel quel via le même `require()`
+dans `app/(tabs)/index.tsx`.
 
 ---
 
@@ -669,7 +732,7 @@ se voit plus en release.
 | 2 | Répartition du contenu entre « À l'affiche » et « Les pépites » | Chantier 2 | Non — à trancher au démarrage |
 | 3 | Liens artistes : URL réelles ou placeholders ? | Chantier 2 | Oui — en fin de chantier |
 | 4 | Forme exacte du signal de dépliage sur La Carte | Chantier 3 | Oui — s'arbitre en voyant le chantier 2 |
-| 5 | **Deux boutons de même rang sur l'accueil, un second rétrogradé, ou un seul ?** | Chantier 1c | Non — c'est tout le chantier. Se juge à l'écran, sur la photo |
+| ~~5~~ | ~~Deux boutons de même rang sur l'accueil, un second rétrogradé, ou un seul ?~~ **Tranché : les deux en verre (`tone="glass"`), le principal distingué par un anneau ambré qui bat (`emphasis`)**, pas par une couleur pleine. | — | Réglé le 4 août 2026 |
 | ~~6~~ | ~~La nouvelle accroche de Soirées tient-elle en 1–2 lignes ?~~ **Mesuré : oui, 2 lignes** sur 360 comme sur 412. Elle reste centrée. | — | Réglé le 3 août 2026 |
 | 7 | **Garde-t-on le halo du bouton ?** C'est la signature « ampoule », mais c'est aussi ce qui coûte un montage par appui | Chantier 4 | Oui — se tranche en le voyant allégé |
 | 8 | **Le « freeze » survit-il à un build de production ?** À mesurer au moniteur de performance avant d'optimiser | Chantier 4 | Non — c'est la première étape du chantier |

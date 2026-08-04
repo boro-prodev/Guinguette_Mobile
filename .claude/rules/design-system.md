@@ -46,9 +46,18 @@ couleurs changent, et uniquement par le thème :
 </Button>
 ```
 
-`tone` : `solid` · `soft` · `outline` · `ghost`. `size` : `sm` · `md` · `lg`.
-Plus `full` et `circular`. Une chaîne nue en enfant est automatiquement
-enveloppée dans `<Button.Text>`.
+`tone` : `solid` · `soft` · `outline` · `ghost` · `glass`. `size` : `sm` · `md` ·
+`lg`. Plus `full`, `circular` et `emphasis`. Une chaîne nue en enfant est
+automatiquement enveloppée dans `<Button.Text>`.
+
+`tone="glass"` — flou natif (`expo-blur`, livré avec Expo Go) derrière un
+voile teinté par `$solid` du thème courant, pensé pour se poser sur une photo
+comme `lampion` avant lui (texte toujours clair, via `$surface` et non
+`$onOutline` — ce dernier vire sombre sur `dusk`/`neutral`, illisible une fois
+flouté). `emphasis` y ajoute un anneau ambré permanent qui bat (même
+mécanique que le point du `Countdown`) : de quoi garder un rang principal
+quand deux boutons `glass` partagent sinon le même traitement, sans revenir à
+un aplat de couleur.
 
 ## Trois primitives tactiles, à ne pas confondre
 
@@ -100,3 +109,12 @@ fait là et nulle part ailleurs.**
   `displayFont.weight` vaut `'400'` parce que Berkshire Swash n'a que cette
   graisse. Android ignorerait la demande ; iOS, lui, fabriquerait un gras
   approximatif.
+- **Une nouvelle couleur posée dans un `variant` d'un cadre animé
+  (`transition` non nul) peut planter Reanimated**, rencontré en ajoutant
+  `tone="glass"` à `Button.tsx` : `Cannot create property 'onStart' on number
+  '999'` — Reanimated confondait le `borderColor` inédit du variant avec le
+  rayon de pilule (999). Reproductible même avec `transition={null}` posé sur
+  l'instance ; le seul contournement fiable a été de ne **jamais** introduire
+  de couleur nouvelle dans les `variants` d'un cadre animé, et de la poser à
+  la place sur un `View` React Native statique, superposé en enfant (cf.
+  `ButtonGlassFill` dans `Button.tsx`).

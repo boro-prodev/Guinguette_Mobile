@@ -19,9 +19,8 @@ import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useVideoPlayer, VideoView } from 'expo-video';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
   Easing,
   ReduceMotion,
@@ -30,6 +29,7 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/ui/Button';
 import { Guirlande } from '@/components/ui/Guirlande';
@@ -43,8 +43,42 @@ const AMBIANCE_VIDEO = require('../../assets/videos/accueil.mp4');
 /** Durée du fondu photo → vidéo. Assez long pour ne pas se voir comme une coupe. */
 const CROSSFADE_MS = 700;
 
-/** Apparition des deux appels à l'action, une fois l'ouverture terminée. */
-const ACTIONS_FADE_MS = 550;
+/**
+ * Courbe du fondu des boutons — un léger rebond élastique en fin de course,
+ * repris pour le zoom lent de la photo juste plus bas (même qualité de
+ * mouvement sur les deux). Choisie à l'écran, sur l'appareil : essayée après
+ * `Easing.bezier(0.22, 1, 0.36, 1)` (départ franc, pose sans rebond), jugée
+ * trop sage une fois le fondu allongé.
+ */
+const SMOOTH_EASING = Easing.elastic(1);
+
+/**
+ * Fondu du bouton principal — allongé (550 ms au premier réglage) pour rester
+ * doux à cette taille de bloc et laisser le temps à l'élastique de se sentir.
+ * Minuté pour se TERMINER `POST_VIDEO_DELAY_MS` après la fin de la vidéo
+ * (voir l'effet sur `videoReady`) : « Réserver une table » finit de se poser
+ * une fois l'image du dernier plan déjà figée, pas pile dessus.
+ */
+const PRIMARY_FADE_MS = 2000;
+
+/** Écart voulu entre la fin de la vidéo et la fin du fondu du bouton principal. */
+const POST_VIDEO_DELAY_MS = 1500;
+
+/**
+ * « Prochaines soirées » démarre son fondu après le premier — un écart plus
+ * large (150 ms au premier réglage) pour rester perceptible maintenant que
+ * chaque fondu dure 2 s.
+ */
+const SECONDARY_FADE_DELAY_MS = 600;
+
+/**
+ * Secours si `player.duration` n'est pas encore renseigné au moment où la
+ * lecture démarre (ça arrive, la métadonnée peut suivre de quelques ms) :
+ * la durée mesurée à l'encodage du chantier 1d.c (5,04 s), légèrement
+ * arrondie en dessous pour ne jamais faire déborder le fondu après la fin
+ * réelle de la vidéo.
+ */
+const FALLBACK_VIDEO_DURATION_MS = 5000;
 
 export default function HomeScreen() {
   const { open } = useReserve();
@@ -52,13 +86,20 @@ export default function HomeScreen() {
   const reduceMotion = useReducedMotion();
   const scale = useSharedValue(1.08);
   const videoOpacity = useSharedValue(0);
-  const actionsOpacity = useSharedValue(0);
+  const primaryOpacity = useSharedValue(0);
+  const secondaryOpacity = useSharedValue(0);
+  const introTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   /**
    * L'ouverture est jouée, ou elle ne le sera pas. Dans les deux cas les
    * boutons deviennent disponibles — jamais d'écran sans appel à l'action.
    */
   const [introDone, setIntroDone] = useState(false);
+
+  useEffect(() => {
+    const pending = introTimers.current;
+    return () => pending.forEach(clearTimeout);
+  }, []);
 
   // `useVideoPlayer` est un hook : il s'appelle toujours. C'est la SOURCE qu'on
   // met à `null` quand les animations sont coupées — ainsi le fichier n'est
@@ -83,7 +124,27 @@ export default function HomeScreen() {
       easing: Easing.out(Easing.quad),
       reduceMotion: ReduceMotion.System,
     });
-  }, [player, videoOpacity, videoReady]);
+
+    // Les deux fondus sont plantés dans le TEMPS de la vidéo, pas après coup :
+    // « Réserver une table » finit d'apparaître `POST_VIDEO_DELAY_MS` après
+    // que la vidéo s'arrête sur sa dernière image, pas pile dessus.
+    // `player.duration` peut suivre de quelques ms la bascule de statut —
+    // d'où le repli mesuré à l'encodage si elle n'est pas encore renseignée.
+    const durationMs = player.duration > 0 ? player.duration * 1000 : FALLBACK_VIDEO_DURATION_MS;
+    const primaryDelay = Math.max(0, durationMs + POST_VIDEO_DELAY_MS - PRIMARY_FADE_MS);
+    const secondaryDelay = primaryDelay + SECONDARY_FADE_DELAY_MS;
+
+    const fadeIn = (opacity: typeof primaryOpacity) => {
+      opacity.value = withTiming(1, {
+        duration: PRIMARY_FADE_MS,
+        easing: SMOOTH_EASING,
+        reduceMotion: ReduceMotion.System,
+      });
+    };
+
+    introTimers.current.push(setTimeout(() => fadeIn(primaryOpacity), primaryDelay));
+    introTimers.current.push(setTimeout(() => fadeIn(secondaryOpacity), secondaryDelay));
+  }, [player, videoOpacity, videoReady, primaryOpacity, secondaryOpacity]);
 
   // Fin de l'ouverture : on met en pause pour libérer le décodeur — sans ça il
   // continue de tourner tant que l'écran reste monté, et les onglets le
@@ -93,32 +154,39 @@ export default function HomeScreen() {
     setIntroDone(true);
   });
 
-  // Animations coupées : pas de vidéo, donc rien à attendre.
+  // Animations coupées : pas de vidéo, donc rien à attendre — et le minutage
+  // ci-dessus ne se déclenchera jamais (`videoReady` reste faux). Les deux
+  // boutons doivent donc apparaître directement, en pleine opacité.
   useEffect(() => {
-    if (reduceMotion) setIntroDone(true);
-  }, [reduceMotion]);
+    if (!reduceMotion) return;
+    setIntroDone(true);
+    primaryOpacity.value = 1;
+    secondaryOpacity.value = 1;
+  }, [reduceMotion, primaryOpacity, secondaryOpacity]);
 
   // Filet de sécurité : si la vidéo ne peut pas être lue, les boutons
   // apparaissent quand même. Un fond décoratif ne doit jamais pouvoir retenir
-  // l'action principale de l'écran en otage.
+  // l'action principale de l'écran en otage. Pas de vidéo qui finit ⇒ pas de
+  // durée à viser : un fondu classique, immédiat, suffit.
   useEffect(() => {
-    if (status === 'error') setIntroDone(true);
-  }, [status]);
-
-  useEffect(() => {
-    if (!introDone) return;
-    actionsOpacity.value = withTiming(1, {
-      duration: ACTIONS_FADE_MS,
-      easing: Easing.out(Easing.quad),
-      reduceMotion: ReduceMotion.System,
-    });
-  }, [actionsOpacity, introDone]);
+    if (status !== 'error') return;
+    setIntroDone(true);
+    const fadeIn = (opacity: typeof primaryOpacity) => {
+      opacity.value = withTiming(1, {
+        duration: PRIMARY_FADE_MS,
+        easing: SMOOTH_EASING,
+        reduceMotion: ReduceMotion.System,
+      });
+    };
+    fadeIn(primaryOpacity);
+    fadeIn(secondaryOpacity);
+  }, [status, primaryOpacity, secondaryOpacity]);
 
   // Équivalent de @keyframes hero-zoom : la photo se pose lentement.
   useEffect(() => {
     scale.value = withTiming(1, {
       duration: 1600,
-      easing: Easing.bezier(0.22, 1, 0.36, 1),
+      easing: SMOOTH_EASING,
       reduceMotion: ReduceMotion.System,
     });
   }, [scale]);
@@ -128,7 +196,8 @@ export default function HomeScreen() {
   }));
 
   const videoStyle = useAnimatedStyle(() => ({ opacity: videoOpacity.value }));
-  const actionsStyle = useAnimatedStyle(() => ({ opacity: actionsOpacity.value }));
+  const primaryButtonStyle = useAnimatedStyle(() => ({ opacity: primaryOpacity.value }));
+  const secondaryButtonStyle = useAnimatedStyle(() => ({ opacity: secondaryOpacity.value }));
 
   return (
     <View style={styles.screen}>
@@ -205,38 +274,57 @@ export default function HomeScreen() {
           Tant que l'ouverture n'est pas finie, ils sont invisibles, hors
           d'atteinte du doigt (`pointerEvents`) ET des lecteurs d'écran — un
           bouton transparent qu'on peut quand même activer est un piège.
+          `introDone` reste le seul garde côté toucher/accessibilité : les deux
+          fondus ci-dessous ne pilotent que ce qui se VOIT, pas ce qu'on peut
+          ATTEINDRE, et se terminent de toute façon à peu près quand `introDone`
+          bascule.
         */}
-        <Animated.View
-          style={[styles.actions, actionsStyle]}
+        <View
+          style={styles.actions}
           pointerEvents={introDone ? 'auto' : 'none'}
           accessibilityElementsHidden={!introDone}
           importantForAccessibility={introDone ? 'auto' : 'no-hide-descendants'}
         >
-          <Button
-            size="lg"
-            full
-            accessibilityLabel="Réserver une table"
-            onPress={open}
-          >
-            Réserver une table
-          </Button>
-
           {/*
-            Seul endroit de l'app posé sur une photo sombre : le thème
-            « lampion » y remplace le rouge par l'ambre des guirlandes et
-            garde un texte clair. Même bouton, autres couleurs.
+            Chantier 1c. Les deux boutons partagent le même traitement
+            « verre » (`tone="glass"`) — géométrie identique, donc plus rien
+            ne les distingue par la taille ou la forme. `emphasis` rétablit
+            le rang principal sans revenir à un aplat de couleur : un anneau
+            ambré permanent, le même dispositif que le halo de pression,
+            juste toujours allumé plutôt que déclenché au toucher.
+
+            Chaque bouton porte son propre fondu (`primaryButtonStyle` /
+            `secondaryButtonStyle`) plutôt qu'un fondu unique sur le bloc : le
+            premier finit d'apparaître `POST_VIDEO_DELAY_MS` après la fin de
+            la vidéo, le second le suit de peu — cf. l'effet sur `videoReady`
+            plus haut.
           */}
-          <Button
-            theme="lampion"
-            tone="outline"
-            size="lg"
-            full
-            accessibilityLabel="Voir les prochaines soirées"
-            onPress={() => router.navigate('/soirees')}
-          >
-            Prochaines soirées
-          </Button>
-        </Animated.View>
+          <Animated.View style={[styles.primaryButtonWrap, primaryButtonStyle]}>
+            <Button
+              theme="dusk"
+              tone="glass"
+              size="lg"
+              full
+              emphasis
+              accessibilityLabel="Réserver une table"
+              onPress={open}
+            >
+              Réserver une table
+            </Button>
+          </Animated.View>
+
+          <Animated.View style={secondaryButtonStyle}>
+            <Button
+              theme="neutral"
+              tone="glass"
+              size="md"
+              accessibilityLabel="Voir les prochaines soirées"
+              onPress={() => router.navigate('/soirees')}
+            >
+              Prochaines soirées
+            </Button>
+          </Animated.View>
+        </View>
       </View>
     </View>
   );
@@ -297,6 +385,16 @@ const styles = StyleSheet.create({
   },
   actions: {
     width: '100%',
+    // 'center' et non le défaut 'stretch' : le bouton secondaire n'est plus
+    // `full`, il doit se centrer sur sa propre largeur sans que le parent le
+    // réétire.
+    alignItems: 'center',
     gap: spacing.sm + 4,
+  },
+  // L'`Animated.View` qui porte le fondu du bouton principal doit s'étirer
+  // elle-même — sinon le `full` du `Button` qu'elle contient s'étire dans le
+  // vide plutôt que dans la largeur de `actions`.
+  primaryButtonWrap: {
+    alignSelf: 'stretch',
   },
 });

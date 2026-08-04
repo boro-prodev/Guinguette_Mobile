@@ -55,6 +55,13 @@ export const colors = {
   bark: '#6b5d49',
   amberBulb: '#f0ad4a',
   emberDark: '#7c3420',
+
+  /**
+   * Liseré du bouton « verre » (`tone="glass"` de `Button.tsx`) : la même
+   * teinte quel que soit le thème d'accent — c'est le flou et le voile teinté
+   * qui portent la couleur, pas le contour.
+   */
+  glassEdge: 'rgba(255,253,247,0.4)',
 } as const;
 
 /**
