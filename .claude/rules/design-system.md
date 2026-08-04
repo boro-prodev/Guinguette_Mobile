@@ -1,3 +1,10 @@
+---
+paths:
+  - "components/**"
+  - "constants/theme.ts"
+  - "tamagui.config.ts"
+---
+
 # Design system « Terra Guinguette »
 
 > À lire **avant** de toucher à une couleur, un espacement, un bouton, une

@@ -1,3 +1,8 @@
+---
+name: environnement
+description: Lancer l'app (émulateur Android ou téléphone), installer un paquet, toucher aux versions figées, ou committer sur ce dépôt. Couvre l'AVD Guinguette_API36, Metro/Expo Go, le pare-feu Windows, et les contraintes de build.
+---
+
 # Environnement, build et dépôt
 
 > À lire **avant** de lancer l'app, d'installer un paquet, de toucher aux

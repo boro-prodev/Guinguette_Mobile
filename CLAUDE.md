@@ -41,12 +41,15 @@ Elles priment, même sans avoir ouvert le fichier de règles correspondant.
 
 | Fichier | L'ouvrir avant de… |
 |---|---|
-| `.claude/rules/environnement.md` | lancer l'app (émulateur ou téléphone), installer un paquet, toucher aux versions, committer |
 | `.claude/rules/design-system.md` | toucher à une couleur, un espacement, un bouton, une animation ; ajouter un composant visuel |
 | `.claude/rules/typographie.md` | poser une taille de texte ou un interligne, écrire un libellé, rédiger du contenu français |
 | `.claude/rules/ecrans.md` | toucher à la navigation, à un défilement, à une animation, au fond vidéo de l'accueil |
 | `.claude/rules/donnees-et-demo.md` | modifier le contenu de la démo, ajouter un parcours, persister un état |
 | `ROADMAP.md` | entamer un chantier sur Accueil, Soirées ou La Carte |
+
+Lancer l'app, installer un paquet, toucher aux versions ou committer : ce n'est
+plus un fichier à ouvrir, c'est le skill **`environnement`**, invoqué
+automatiquement selon l'intention (`.claude/skills/environnement/`).
 
 ## Stack & commandes
 

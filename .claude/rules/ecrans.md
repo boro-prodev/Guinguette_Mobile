@@ -1,3 +1,10 @@
+---
+paths:
+  - "app/**"
+  - "components/layout/**"
+  - "components/features/**"
+---
+
 # Écrans, navigation et mouvement
 
 > À lire **avant** de toucher à la navigation, à un défilement, à une animation,

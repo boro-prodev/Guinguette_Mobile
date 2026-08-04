@@ -1,3 +1,11 @@
+---
+paths:
+  - "components/**"
+  - "constants/theme.ts"
+  - "utils/text.ts"
+  - "data/**"
+---
+
 # Typographie
 
 > À lire **avant** de poser une taille de texte, un interligne, un libellé, ou

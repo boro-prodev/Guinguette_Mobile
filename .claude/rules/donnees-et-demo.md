@@ -1,3 +1,10 @@
+---
+paths:
+  - "data/**"
+  - "hooks/useDemoFlag.ts"
+  - "features/reserve/**"
+---
+
 # Données placeholder et parcours simulés
 
 > À lire **avant** de modifier le contenu de la démo, d'ajouter un parcours
