@@ -1,8 +1,7 @@
 /**
- * Barre supérieure, identique sur les quatre onglets (port du header injecté
- * par src/nav.js). Elle n'est déclarée qu'ici et branchée dans
+ * Barre supérieure, identique sur les quatre onglets.
+ * Elle n'est déclarée qu'ici et branchée dans
  * app/(tabs)/_layout.tsx : c'est la source unique de la navigation haute.
- *
  * Variante `floating` : sur l'accueil, le header se pose par-dessus la photo
  * plein écran, sans fond opaque.
  */
