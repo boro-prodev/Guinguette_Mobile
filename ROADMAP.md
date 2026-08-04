@@ -12,6 +12,10 @@
 > du **sous-titre de Soirées** — déjà prévue au chantier 2, simplement renforcée
 > — et un **chantier 4 sur le mouvement** (pression du bouton, ouverture de la
 > feuille de réservation). Les chantiers 1a, 1c, 2, 3 et 4 restent entiers.
+> **Mise à jour du 4 août 2026** — **1a est fait** : la guirlande ne rogne plus
+> ses halos et ne collide plus avec le jambage du « g » d'Oignies (vérifié à
+> l'écran, sur émulateur). Dans le chantier 1, ne restent ouverts que **1d.c**
+> (débit de la vidéo) et **1c** (hiérarchie des deux boutons).
 > **Le reste de ce document n'est pas implémenté.** C'est un plan de travail, pas
 > un compte rendu. L'état réel de l'app est décrit dans `CLAUDE.md`.
 
@@ -38,12 +42,13 @@ ne soit pas reposée trois semaines plus tard.
 |---|---|---|---|
 | **0** | Identité typographique | 3 août 2026 | Berkshire Swash remplace Fraunces en display et headline. Les tailles n'ont pas bougé : son plancher (1,242) est à peine au-dessus de celui de Fraunces (1,233). |
 | **1b** | Accueil — « g » de Oignies rogné | 3 août 2026 | Le blocage était infondé : le correctif se déduisait des métriques de la police, sans attendre le chantier 0. |
+| **1a** | Accueil — guirlande rognée | 4 août 2026 | Le `viewBox` élargi ne suffisait pas seul à écarter la guirlande du jambage du « g » : `marginTop` est passé de `spacing.sm` à `spacing.snug`, vérifié à l'écran. |
 
 ## Ordre conseillé — ce qui reste
 
 | # | Chantier | État | Pourquoi à ce moment-là |
 |---|---|---|---|
-| **1a + 1d + 1c** | Accueil — guirlande, réglages vidéo, puis les deux appels à l'action | ✅ **prêt** | **Une seule passe, dans cet ordre.** 1a et 1c touchent le rythme vertical du bas d'écran ; 1d fixe le fond, et les boutons ne se jugent pas sur un fond qui va encore bouger. |
+| **1d.c + 1c** | Accueil — débit vidéo, puis les deux appels à l'action | ✅ **prêt** | 1a est fait (4 août), 1d.a et 1d.b aussi (3 août). Restent le ré-encodage vidéo et la hiérarchie des boutons — celle-ci se juge sur un fond désormais stable. |
 | **2** | Soirées — les pépites | ✅ **prêt** | La plus grosse refonte, mais elle est *structurelle* (disposition, gestes) : un changement de police plus tard demandera de réajuster des tailles, pas de tout refaire. |
 | **3** | La Carte — fiches repliées | ✅ **prêt** | Réutilise le motif validé en 2. Beaucoup moins risqué une fois 2 fait. |
 | **4** | Mouvement — pression du bouton, ouverture de la feuille | ✅ **prêt** | Ajouté le 3 août 2026. Indépendant des autres, mais **transverse** : touche LE bouton et la feuille, donc tous les écrans. À faire quand le reste est stable. |
@@ -211,16 +216,16 @@ vérifie à chaque changement de police.
 
 # Chantier 1 — Accueil
 
-Quatre points sur le même écran. **1b est fait** (3 août 2026) ; restent **1a**
-(bug d'affichage), **1d** (réglages de la vidéo de fond) et **1c** (reprise de
-conception des boutons).
+Quatre points sur le même écran. **1b est fait** (3 août 2026), **1a** aussi
+(4 août 2026), et **1d** est fait aux deux tiers (1d.a et 1d.b, 3 août 2026) ;
+restent **1d.c** (débit de la vidéo) et **1c** (reprise de conception des
+boutons).
 
-**Les trois se traitent en une seule passe, dans l'ordre 1a → 1d → 1c** : 1a et
-1c touchent tous deux le rythme vertical du bas d'écran, et 1d fixe le fond —
-juger la hiérarchie des boutons sur un fond encore mouvant, c'est trancher deux
-fois.
+**1d.c et 1c se traitent avant tout dans cet ordre** : juger la hiérarchie des
+boutons sur un fond encore lourd (donc pas encore optimisé), c'est risquer de la
+retrancher une fois 1d.c fait.
 
-## 1a. Les ampoules de la guirlande sont rognées ✅ prêt
+## 1a. Les ampoules de la guirlande sont rognées ✅ fait le 4 août 2026
 
 **Diagnostic (trouvé en lisant `components/ui/Guirlande.tsx`) :** ce n'est pas un
 problème de largeur, c'est le `viewBox` qui est trop court en hauteur.
@@ -236,19 +241,22 @@ Leurs halos sont donc coupés net, alors que les deux ampoules à `cy: 9` passen
 sans problème. D'où l'impression d'irrégularité : certaines sont entières,
 d'autres non.
 
-**Correctif :** agrandir le `viewBox` verticalement (par exemple
-`viewBox="0 -10 240 48"`) sans toucher aux coordonnées des ampoules, et ajuster
-le calcul de `height` en conséquence. Réduire le rayon du halo marcherait aussi
-mais affaiblirait l'effet lumineux, qui est la signature du projet.
+**Correctif appliqué :** `viewBox` porté à `"0 -10 240 48"` — exactement la
+piste envisagée ci-dessus —, sans toucher aux coordonnées des ampoules, et
+`height` recalculé sur ce nouveau ratio (`(width / 240) * 48`). Les six halos
+sont désormais entiers, vérifié à l'écran sur `Guinguette_API36`.
 
-**Constaté en plus, le 3 août 2026 (capture après le passage à Berkshire
-Swash) :** la guirlande vient se poser **dans la zone du jambage d'« Oignies »**.
-Ce n'est pas la bascule qui l'a causé — les profondeurs sont quasi identiques
-(Fraunces 0,255 em, Berkshire 0,262 em) — mais le « g » à swash de Berkshire est
-bien plus expansif, donc la proximité se lit maintenant comme une collision.
-`guirlande.marginTop` vaut `spacing.sm` (12 px) dans `app/(tabs)/index.tsx` :
-c'est le levier. À régler en même temps que le `viewBox`, sinon on ajuste deux
-fois le même espacement.
+**Constaté le 3 août 2026 (capture après le passage à Berkshire Swash), et
+toujours vrai une fois le `viewBox` seul élargi :** la guirlande venait se poser
+**dans la zone du jambage d'« Oignies »**. Le `viewBox` plus haut pousse le
+contenu visible plus bas dans son propre cadre — ça ouvre un peu d'air — mais
+pas assez : au premier essai, `marginTop` laissé à `spacing.sm` (12 px)
+collait encore la guirlande au « g ». Il a fallu l'augmenter réellement, pas
+seulement compter sur l'effet indirect du `viewBox`.
+
+**`guirlande.marginTop` est passé de `spacing.sm` à `spacing.snug`** (12 → 16 px)
+dans `app/(tabs)/index.tsx`. Vérifié par comparaison de captures avant/après :
+c'était bien le bon levier, la valeur qui manquait.
 
 **Fichiers :** `components/ui/Guirlande.tsx` (le `viewBox`) et
 `app/(tabs)/index.tsx` (l'espacement).

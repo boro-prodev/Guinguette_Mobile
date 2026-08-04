@@ -278,7 +278,9 @@ const styles = StyleSheet.create({
   },
   guirlande: {
     alignItems: 'center',
-    marginTop: spacing.sm,
+    // spacing.sm collait la guirlande au jambage du « g » d'Oignies : le
+    // viewBox agrandi (voir Guirlande.tsx) ne suffisait pas seul.
+    marginTop: spacing.snug,
     marginBottom: spacing.md,
   },
   tagline: {

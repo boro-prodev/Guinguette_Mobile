@@ -24,7 +24,10 @@ const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
 type Bulb = { cx: number; cy: number; flickerDelay: number | null };
 
-/** Positions reprises telles quelles du SVG du site (viewBox 240 × 28). */
+/**
+ * Positions reprises telles quelles du SVG d'origine (viewBox 240 × 28) —
+ * seul le viewBox a grandi depuis, pour laisser leurs halos respirer.
+ */
 const BULBS: Bulb[] = [
   { cx: 20, cy: 9, flickerDelay: 0 },
   { cx: 62, cy: 20, flickerDelay: null },
@@ -79,10 +82,13 @@ type GuirlandeProps = {
 };
 
 function GuirlandeComponent({ width = 200 }: GuirlandeProps) {
-  const height = (width / 240) * 28;
+  // Le viewBox fait 240 × 48 (et non 28) : chaque ampoule porte un halo de
+  // rayon 8, et certaines (cy: 5, cy: 24) débordaient d'un cadre trop court
+  // en hauteur — leurs halos étaient coupés net.
+  const height = (width / 240) * 48;
 
   return (
-    <Svg width={width} height={height} viewBox="0 0 240 28" fill="none">
+    <Svg width={width} height={height} viewBox="0 -10 240 48" fill="none">
       <Path
         d="M2 4 Q60 26 120 4 T238 4"
         stroke={colors.bark}
