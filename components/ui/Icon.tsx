@@ -26,7 +26,8 @@ export type IconName =
   | 'location'
   | 'clock'
   | 'directions'
-  | 'chevron';
+  | 'chevron'
+  | 'link';
 
 type IconProps = {
   name: IconName;
@@ -114,6 +115,14 @@ const PATHS: Record<IconName, React.ReactNode> = {
   ),
   // Pointe vers le bas au repos ; les composants qui déplient le font pivoter.
   chevron: <Path d="m7 10 5 5 5-5" />,
+  // Lien externe : cadre ouvert en haut à droite, d'où sort la flèche.
+  link: (
+    <G>
+      <Path d="M9 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-4" />
+      <Path d="M15 3h6v6" />
+      <Path d="m21 3-11 11" />
+    </G>
+  ),
 };
 
 function IconComponent({

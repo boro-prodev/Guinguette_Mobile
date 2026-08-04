@@ -28,14 +28,24 @@ les deux gestes sont identiques.
 <ScrollView horizontal {...useSwipeGuard()} />
 ```
 
-C'est pour cette raison que l'affiche « À l'affiche » se change au toucher et non
-au glissement.
+⚠️ **Imbriqué dans le `ScrollView` vertical de l'écran, importer ce `ScrollView`
+depuis `react-native-gesture-handler`, pas `react-native`.** Rencontré au
+chantier 2 (le carrousel « À l'affiche » / « Les pépites ») : le `ScrollView`
+natif de React Native se fait parfois voler le geste par le `Gesture.Pan()` de
+`SwipeTabsArea` une fois posé à l'intérieur d'un autre `ScrollView` — `blocked`
+passe bien à `true` au toucher, mais le swipe change quand même d'onglet,
+**silencieusement, sans erreur**. `useSwipeGuard()` seul ne suffit pas dans ce
+cas ; le `ScrollView` de `react-native-gesture-handler` s'annonce correctement
+auprès du même arbitrage tactile que `SwipeTabsArea` et referme le trou. La
+rangée de filtres de La Carte n'a jamais eu ce problème : elle est imbriquée
+dans une `FlatList`, pas un `ScrollView`.
 
 ## Listes
 
 Les listes passent par **`FlatList`** (jamais `ScrollView`) et leurs éléments
 sont **mémoïsés**. Exception admise : un contenu court et statique, comme
-l'écran Infos.
+l'écran Infos — ou l'écran Soirées depuis le chantier 2, dont les deux sections
+sont un nombre fixe de carrousels, pas une liste.
 
 ## `prefers-reduced-motion` doit être respecté
 

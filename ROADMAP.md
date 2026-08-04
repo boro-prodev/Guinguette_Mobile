@@ -27,6 +27,20 @@
 > `.claude/rules/design-system.md`, y compris un piège Reanimated rencontré en
 > route. Il ne reste ouvert, dans le chantier 1, que **1d.a** (le voile de la
 > vidéo) — voir la question 10 en fin de document.
+> **Mise à jour du 4 août 2026 (nuit)** — **Chantier 2 fait.** Jonathan a
+> reformulé l'interaction en cours de route : le carrousel « À l'affiche » se
+> swipe désormais au doigt (garde-fou `useSwipeGuard()`), et le toucher sur
+> l'affiche déplie ses informations au lieu de faire avancer à la soirée
+> suivante. « Les pépites » n'est pas « toute la programmation » comme le
+> proposait ce document par défaut, mais une sélection **manuelle** de
+> l'exploitant (`pepite: boolean` dans `data/events.ts`) — l'ancien point
+> ouvert n°2 est tranché différemment de sa proposition par défaut. `EventCard`
+> a disparu, son contenu migré dans un panneau de dépliage partagé
+> (`EventDetailPane`). Un piège technique inédit a été rencontré et documenté
+> dans `.claude/rules/ecrans.md` : un `ScrollView` React Native imbriqué dans
+> le `ScrollView` vertical de l'écran se fait parfois voler son geste par le
+> swipe d'onglets, *silencieusement* ; le contournement est d'importer ce
+> `ScrollView` depuis `react-native-gesture-handler`.
 > **Le reste de ce document n'est pas implémenté.** C'est un plan de travail, pas
 > un compte rendu. L'état réel de l'app est décrit dans `CLAUDE.md`.
 
@@ -56,12 +70,12 @@ ne soit pas reposée trois semaines plus tard.
 | **1a** | Accueil — guirlande rognée | 4 août 2026 | Le `viewBox` élargi ne suffisait pas seul à écarter la guirlande du jambage du « g » : `marginTop` est passé de `spacing.sm` à `spacing.snug`, vérifié à l'écran. |
 | **1d.c** | Accueil — débit de la vidéo | 4 août 2026 | Ré-encodée à 768×576, ~1290 kbit/s : 2,45 Mo → 782 Kio (÷3,1). Qualité vérifiée à l'écran, aucune perte perceptible derrière le voile. |
 | **1c** | Accueil — hiérarchie des deux boutons | 4 août 2026 | Verre (`tone="glass"`) + anneau ambré permanent qui bat (`emphasis`) sur le bouton principal. Deux ajouts à `Button.tsx` non prévus par ce document — voir le chantier pour le détail et le piège Reanimated rencontré. |
+| **2** | Soirées — les pépites | 4 août 2026 (nuit) | Carrousel swipé (`useSwipeGuard()` + `ScrollView` de `react-native-gesture-handler`), tap pour déplier plutôt qu'avancer, « Les pépites » = sélection manuelle (`pepite: boolean`). `EventCard` a disparu, migré dans `EventDetailPane`. |
 
 ## Ordre conseillé — ce qui reste
 
 | # | Chantier | État | Pourquoi à ce moment-là |
 |---|---|---|---|
-| **2** | Soirées — les pépites | ✅ **prêt** | La plus grosse refonte, mais elle est *structurelle* (disposition, gestes) : un changement de police plus tard demandera de réajuster des tailles, pas de tout refaire. |
 | **3** | La Carte — fiches repliées | ✅ **prêt** | Réutilise le motif validé en 2. Beaucoup moins risqué une fois 2 fait. |
 | **4** | Mouvement — pression du bouton, ouverture de la feuille | ✅ **prêt** | Ajouté le 3 août 2026. Indépendant des autres, mais **transverse** : touche LE bouton et la feuille, donc tous les écrans. À faire quand le reste est stable. |
 
@@ -439,9 +453,65 @@ dans `app/(tabs)/index.tsx`.
 
 ---
 
-# Chantier 2 — Soirées : les pépites ✅ prêt
+# Chantier 2 — Soirées : les pépites ✅ fait le 4 août 2026 (nuit)
 
-## Intention
+## Résultat
+
+**L'écran garde ses deux sections (« À l'affiche », « Les pépites »), mais
+l'interaction et le contenu diffèrent de ce que ce document proposait par
+défaut** — reformulés par Jonathan le jour même, en cours de chantier :
+
+- **Le carrousel se parcourt au doigt** (`ScrollView` paginé, `pagingEnabled`),
+  gardé par `useSwipeGuard()` pour ne jamais changer d'onglet. Les trois
+  pastilles du bas restent, pour un saut direct.
+- **Le toucher sur l'affiche déplie ses informations** au lieu de faire avancer
+  à la soirée suivante — l'avancée manuelle disparaît, remplacée par le swipe.
+- **« Les pépites » n'est pas « toute la programmation ».** C'est une
+  sélection **manuelle** de l'exploitant : `pepite: boolean` dans
+  `data/events.ts`, coché soirée par soirée. La section ne s'affiche pas du
+  tout si rien n'est coché. Ça tranche le point ouvert n°2 différemment de la
+  proposition par défaut de ce document.
+- **Le dépliage est un panneau unique, partagé par tout le carrousel**
+  (`EventDetailPane`, nouveau fichier) — jamais un par page. Il ne reste monté
+  que pendant qu'il est ouvert : démonté à chaque changement de soirée, pour
+  éviter qu'`useDemoFlag` affiche un instant l'état RSVP de l'ancienne soirée
+  sous le nouvel événement.
+- **`EventCard.tsx` a disparu**, son contenu (date, description, programme,
+  jauge, tarif, bouton RSVP) migré tel quel dans `EventDetailPane`, sans son
+  ancien sous-niveau de repli « Le programme » — devenu redondant avec le
+  dépliage qui l'englobe désormais.
+- **Pastille de lien artiste** : le `Button` existant (`tone="ghost"`,
+  `circular`), pas un nouveau composant. Nouvelle icône `link` dans
+  `Icon.tsx`. `artistUrl` reste vide sur les 3 soirées placeholder — la
+  pastille s'affiche donc désactivée, l'option « plus sûre » déjà envisagée
+  ici plutôt qu'un lien inventé qui tomberait sur un 404 en démo.
+- **Bouton « Participer »** dans tous ses états, ✓ une fois coché — repris
+  sans changement de logique depuis l'ancien `EventCard`.
+
+**Piège technique rencontré, documenté dans `.claude/rules/ecrans.md` :** un
+`ScrollView` React Native, imbriqué dans le `ScrollView` vertical de l'écran
+(lui-même sous le `Gesture.Pan()` de `SwipeTabsArea`), se fait parfois voler
+son geste par le swipe d'onglets — `useSwipeGuard()` seul ne suffit pas,
+**silencieusement, sans erreur ni avertissement**. Constaté à l'écran sur
+`Guinguette_API36` : le carrousel restait immobile et l'app changeait
+d'onglet. Le contournement : importer ce `ScrollView` depuis
+`react-native-gesture-handler` plutôt que `react-native` — il s'annonce
+correctement auprès du même arbitrage tactile que `SwipeTabsArea`. La rangée
+de filtres de La Carte n'avait jamais rencontré ce piège : elle est imbriquée
+dans une `FlatList`, pas un `ScrollView`.
+
+**`app/(tabs)/soirees.tsx` passe de `FlatList` à `ScrollView`** — la liste de
+cartes qui justifiait la `FlatList` a disparu ; l'écran est désormais un
+nombre fixe de sections, l'exception déjà admise pour Infos.
+
+**Ce que ça a touché :** `app/(tabs)/soirees.tsx`, `components/features/
+EventSpotlight.tsx` (réécrit), `components/features/EventDetailPane.tsx`
+(nouveau), `components/features/EventCard.tsx` (supprimé), `components/ui/
+Icon.tsx` (icône `link`), `data/events.ts` (`pepite`, `artistUrl`).
+`components/ui/Button.tsx` **n'a pas changé** — seuls les libellés appelants,
+comme prévu.
+
+## Intention (le besoin d'origine, tel qu'il était formulé)
 
 « À l'affiche » fonctionne : c'est le bon format. **On supprime la liste de
 cartes du dessous** et on la remplace par une seconde section, « Les pépites »,
@@ -472,85 +542,17 @@ L'écran Soirées devient donc :
 └────────────────────────────┘
 ```
 
-## Décidé
+## Ce qui reste ouvert
 
-1. **Sous-titre** — « Découverte ! Ambiance Unique ! Artiste Incroyable »
-   remplace le paragraphe actuel.
+- **Liens artistes : URL réelles ou placeholders ?** Toujours non tranché,
+  comme prévu ici — `artistUrl` reste vide sur les 3 soirées placeholder, la
+  pastille s'affiche désactivée. À reprendre le jour où l'exploitant fournit
+  de vraies URL.
 
-   **Reconfirmé le 3 août 2026** — motif donné par Jonathan : le texte actuel
-   n'est **« pas assez concis et dynamique »**. C'est bien un problème de *copie*
-   avant d'être un problème de mise en forme, et ça valide la décision déjà
-   prise ici.
-
-   Trois mesures qui vont dans le même sens, relevées pendant la revue
-   typographique :
-
-   - le paragraphe fait **4 lignes centrées**, pas trois — sur 360 px *comme* sur
-     412 px ;
-   - à 412 px il se termine par un **orphelin d'un seul mot** (« rendez-vous. ») ;
-   - centré sur 4 lignes, chaque ligne repart d'un x différent : l'œil peine à
-     enchaîner.
-
-   Le remplacement règle les trois d'un coup — **à condition de ne pas recentrer
-   un bloc de plusieurs lignes.** Si la nouvelle accroche tient sur une ou deux
-   lignes, centrée elle va très bien ; au-delà, il faut l'aligner à gauche.
-
-   ✅ **Mesuré le 3 août 2026 : l'accroche proposée tient en 2 lignes**, sur 360
-   comme sur 412 px (Karla 18 px). Elle peut donc rester centrée.
-   ⚠️ Une réserve tout de même : à 412 px elle se coupe en « Découverte !
-   Ambiance Unique ! Artiste » / « **Incroyable** » — soit un dernier mot seul.
-   Si ça choque à l'écran, raccourcir d'un mot suffira.
-
-   **Fichier :** `app/(tabs)/soirees.tsx` (`styles.intro` porte le
-   `textAlign: 'center'`).
-2. **Les pépites reprennent à l'identique le composant « à l'affiche »** —
-   même affichage, même fonctionnement. Ce n'est pas un nouveau composant à
-   écrire, c'est `EventSpotlight` réutilisé.
-3. **Le swipe horizontal est autorisé** pour parcourir les cartes, dans les deux
-   sections.
-   ⚠️ **Il ne doit pas changer d'onglet.** C'est déjà outillé : `useSwipeGuard()`
-   existe exactement pour ce conflit (cf. `CLAUDE.md`). C'est d'ailleurs pour ça
-   que l'affiche actuelle se change au toucher — passer au swipe lève cette
-   limite, à condition de poser le garde-fou.
-4. **Clic sur l'image → dépliage** des informations aujourd'hui portées par les
-   cartes du bas : date, description, programme horaire, jauge de places, tarif.
-   Une seule dépliée à la fois, et c'est la page qui défile (pas de défilement
-   imbriqué dans la carte — ça ferait un troisième geste au même endroit).
-5. **Une pastille de lien** vers le site ou le réseau social du groupe/artiste,
-   à l'intérieur du bloc déplié.
-6. **Le bouton devient « Participer »** dans tous ses états. Une fois coché, il
-   est mis en avant avec un **✓** (le basculement au vert existe déjà).
-
-## Ce que ça touche
-
-- `app/(tabs)/soirees.tsx` — sous-titre, suppression de la `FlatList` de cartes,
-  ajout de la seconde section
-- `components/features/EventSpotlight.tsx` — gagne le swipe horizontal et le
-  dépliage ; devient le composant unique de l'écran
-- `components/features/EventCard.tsx` — **son contenu migre** dans le dépliage du
-  spotlight, puis le fichier disparaît
-- `data/events.ts` — nouveau champ pour le lien artiste
-- `components/ui/Button.tsx` — **rien à changer ici**, seulement les libellés
-  appelants. *(Le chantier 4 le modifie, lui — mais pour le mouvement, pas pour
-  la géométrie. Les deux ne se marchent pas dessus.)*
-
-## Encore ouvert
-
-- **Quel contenu dans quelle section ?** Les deux sections utilisant le même
-  composant sur les mêmes 3 soirées, il faut une règle de répartition.
-  Proposition par défaut : *« À l'affiche » = la prochaine soirée uniquement ;
-  « Les pépites » = toute la programmation.* À confirmer.
-- **Liens artistes : URL réelles ou placeholders ?** Les données du projet sont
-  des placeholders ; des URL inventées tomberaient sur des 404 en pleine démo
-  client. Un lien vers une page qui existe, ou une pastille visuellement
-  désactivée, est plus sûr.
-
-## Note
-
-La pastille de lien ouvrira le navigateur via `Linking.openURL` — comme le bouton
-« M'y rendre » de l'écran Infos, qui crée déjà le précédent. C'est la seule sortie
-externe de la démo, et elle reste dans le cadre « aucune donnée envoyée » :
-on n'envoie rien, on ouvre un lien.
+La pastille de lien ouvre le navigateur via `Linking.openURL` — comme le
+bouton « M'y rendre » de l'écran Infos, qui créait déjà le précédent. C'est la
+seule sortie externe de la démo, et elle reste dans le cadre « aucune donnée
+envoyée » : on n'envoie rien, on ouvre un lien.
 
 ---
 
@@ -729,8 +731,8 @@ se voit plus en release.
 | # | Question | Bloque | Peut attendre ? |
 |---|---|---|---|
 | ~~1~~ | ~~Réaligner les polices avec `../Guinguette_Web` ?~~ **Question caduque** : la prémisse était fausse (les deux design systems étaient alignés) et la divergence est maintenant assumée. Reste un nettoyage à faire côté site. | — | Réglé le 3 août 2026 |
-| 2 | Répartition du contenu entre « À l'affiche » et « Les pépites » | Chantier 2 | Non — à trancher au démarrage |
-| 3 | Liens artistes : URL réelles ou placeholders ? | Chantier 2 | Oui — en fin de chantier |
+| ~~2~~ | ~~Répartition du contenu entre « À l'affiche » et « Les pépites » ?~~ **Tranché autrement que la proposition par défaut : « À l'affiche » garde toute la programmation ; « Les pépites » est une sélection manuelle de l'exploitant** (`pepite: boolean`). | — | Réglé le 4 août 2026 |
+| 3 | Liens artistes : URL réelles ou placeholders ? | — | Oui — `artistUrl` reste vide, pastille désactivée en attendant |
 | 4 | Forme exacte du signal de dépliage sur La Carte | Chantier 3 | Oui — s'arbitre en voyant le chantier 2 |
 | ~~5~~ | ~~Deux boutons de même rang sur l'accueil, un second rétrogradé, ou un seul ?~~ **Tranché : les deux en verre (`tone="glass"`), le principal distingué par un anneau ambré qui bat (`emphasis`)**, pas par une couleur pleine. | — | Réglé le 4 août 2026 |
 | ~~6~~ | ~~La nouvelle accroche de Soirées tient-elle en 1–2 lignes ?~~ **Mesuré : oui, 2 lignes** sur 360 comme sur 412. Elle reste centrée. | — | Réglé le 3 août 2026 |

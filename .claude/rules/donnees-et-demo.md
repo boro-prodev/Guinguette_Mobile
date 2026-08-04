@@ -31,7 +31,18 @@ paraisse jamais périmée, quel que soit le jour où on la montre.
 
 Chaque soirée porte aussi un `theme` (`primary` | `secondary` | `tertiary`) qui
 peint sa carte entière — c'est **là** qu'on change la couleur d'une soirée, pas
-dans `EventCard`.
+dans `EventSpotlight`/`EventDetailPane`.
+
+Deux champs de curation manuelle, ajoutés au chantier 2 :
+
+- **`pepite: boolean`** — coché par l'exploitant pour faire apparaître la
+  soirée dans la section « Les pépites » de l'écran Soirées. Jamais déduit
+  d'une règle automatique (« tout ce qui n'est pas à l'affiche », etc.) :
+  c'est un choix éditorial, posé ici.
+- **`artistUrl?: string`** — site ou réseau social de l'artiste, ouvert par la
+  pastille de lien du panneau déplié. Laissé vide tant qu'aucune URL réelle
+  n'est fournie : la pastille s'affiche alors désactivée plutôt que de risquer
+  un lien mort en pleine démo client.
 
 ## Parcours simulés
 

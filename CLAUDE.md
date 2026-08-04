@@ -76,7 +76,8 @@ automatiquement selon l'intention (`.claude/skills/environnement/`).
 | `components/ui/Button.tsx` | **LE bouton de l'app** — un seul objet, décliné par thème |
 | `components/ui/PressableScale.tsx` | Zone tactile brute — **pas** un bouton |
 | `components/layout/SwipeTabs.tsx` | Navigation au doigt entre onglets (+ `useSwipeGuard`) |
-| `components/features/EventSpotlight.tsx` | « À l'affiche » : une soirée en grand, fondu enchaîné, pagination |
+| `components/features/EventSpotlight.tsx` | Carrousel d'une soirée à la fois (swipe + pastilles), réutilisé pour « À l'affiche » et « Les pépites » ; le tap déplie `EventDetailPane` |
+| `components/features/EventDetailPane.tsx` | Panneau déplié d'une soirée : description, programme, jauge, tarif, lien artiste, bouton « Participer » |
 | `components/features/Countdown.tsx` | Compte à rebours vivant (retick chaque minute, point qui bat) |
 | `components/features/SeatsGauge.tsx` | Jauge de places, pousse depuis la gauche à l'apparition |
 | `features/reserve/` | Parcours de réservation simulé (bottom sheet 3 étapes) |

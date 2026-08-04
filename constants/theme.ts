@@ -136,6 +136,16 @@ export const type = {
     fontSize: 19,
     lineHeight: 26,
   },
+  /**
+   * Un sous-titre en affiche plutôt qu'en corps de texte — voulu pour
+   * l'accroche de Soirées. Berkshire Swash exige 16 × 1,242 = 19,9 px ;
+   * lineHeight 24 passe largement.
+   */
+  headlineXs: {
+    fontFamily: fonts.headline,
+    fontSize: 16,
+    lineHeight: 24,
+  },
   bodyLg: {
     fontFamily: fonts.body,
     fontSize: 18,
@@ -164,7 +174,7 @@ export const type = {
   },
   /** Micro-libellés EN CAPITALES uniquement — sinon, `caption`. */
   labelSm: {
-    fontFamily: fonts.label,
+    fontFamily: fonts.headline,
     fontSize: 12,
     lineHeight: 16,
     letterSpacing: 0.6,

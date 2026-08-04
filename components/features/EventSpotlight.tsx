@@ -1,28 +1,48 @@
 /**
- * « À l'affiche » — l'accroche en haut de l'écran Soirées.
+ * « À l'affiche » / « Les pépites » — un carrousel plein écran d'une soirée à
+ * la fois, avec son compte à rebours. Le composant est générique : c'est
+ * `soirees.tsx` qui décide du titre (`kicker`) et du sous-ensemble de soirées
+ * affiché — le carrousel lui-même ne sait pas dans quelle section il vit.
  *
- * Une seule soirée à la fois, en grand, avec son compte à rebours. On passe
- * à la suivante en touchant l'affiche, ou directement à celle qu'on veut par
- * les trois barres du bas.
+ * Navigation : au doigt, par un vrai `ScrollView` paginé, ou directement par
+ * l'une des pastilles du bas. Le swipe est gardé par `useSwipeGuard()` — sans
+ * lui, le même geste ferait aussi changer d'onglet, puisque `SwipeTabsArea`
+ * couvre tout l'écran. C'est le même mécanisme déjà utilisé par la rangée de
+ * filtres de La Carte, appliqué ici à un défilement paginé plutôt que libre.
  *
- * Volontairement PAS un carrousel qui défile au doigt : l'écran entier est
- * déjà sensible au glissement horizontal pour changer d'onglet, et deux
- * gestes identiques superposés se disputeraient le doigt. Le changement se
- * fait donc au toucher — et l'animation d'entrée, elle, garde le sens de la
- * lecture.
+ * Toucher l'affiche active déplie ses informations (description, programme,
+ * jauge, tarif, lien artiste, bouton « Participer ») dans un panneau unique,
+ * partagé par tout le carrousel — jamais un par page. Changer de soirée
+ * (swipe ou pastille) referme systématiquement le panneau : une seule dépliée
+ * à la fois, et jamais l'ancienne affichée sous le nouvel événement.
  */
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
-import { memo, useCallback, useState } from 'react';
-import { StyleSheet } from 'react-native';
-import { useReducedMotion } from 'react-native-reanimated';
-import { AnimatePresence, styled, Text, Theme, View, XStack, YStack } from 'tamagui';
+import { memo, useCallback, useRef, useState } from 'react';
+import {
+  StyleSheet,
+  useWindowDimensions,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
+} from 'react-native';
+// Import RNGH plutôt que RN : ce `ScrollView` s'annonce correctement auprès du
+// `Gesture.Pan()` de `SwipeTabsArea` (même arbitrage tactile), alors que le
+// `ScrollView` natif de React Native se le fait parfois voler par ce même
+// geste une fois imbriqué dans le `ScrollView` vertical de l'écran — le
+// glissement finit par changer d'onglet au lieu de faire défiler le
+// carrousel, sans erreur ni avertissement.
+import { ScrollView } from 'react-native-gesture-handler';
+import Animated, { LinearTransition, ReduceMotion, useReducedMotion } from 'react-native-reanimated';
+import { styled, Text, Theme, View, XStack, YStack } from 'tamagui';
 
 import { Countdown } from '@/components/features/Countdown';
+import { EventDetailPane } from '@/components/features/EventDetailPane';
+import { useSwipeGuard } from '@/components/layout/SwipeTabs';
+import { fonts } from '@/constants/theme';
 import type { GuinguetteEvent } from '@/data/events';
 
 /** Hauteur de l'affiche — assez haute pour respirer, assez basse pour laisser
- *  deviner la première carte en dessous et donner envie de faire défiler. */
+ *  deviner le panneau déplié en dessous. */
 const POSTER_HEIGHT = 300;
 
 const Kicker = styled(Text, {
@@ -45,11 +65,7 @@ const PosterShell = styled(View, {
 
 const Poster = styled(View, {
   name: 'Poster',
-  position: 'absolute',
-  top: 0,
-  right: 0,
-  bottom: 0,
-  left: 0,
+  flex: 1,
   justifyContent: 'flex-end',
 });
 
@@ -97,102 +113,162 @@ const DotBar = styled(View, {
 });
 
 type EventSpotlightProps = {
+  /** Titre de la section — « À l'affiche », « Les pépites »… */
+  kicker: string;
   events: GuinguetteEvent[];
 };
 
-function EventSpotlightComponent({ events }: EventSpotlightProps) {
+function EventSpotlightComponent({ kicker, events }: EventSpotlightProps) {
+  const { width: windowWidth } = useWindowDimensions();
+  const [containerWidth, setContainerWidth] = useState(windowWidth);
   const [index, setIndex] = useState(0);
-  /** +1 : on avance dans la programmation ; -1 : on remonte. */
-  const [direction, setDirection] = useState(1);
+  const [expanded, setExpanded] = useState(false);
+  const scrollRef = useRef<ScrollView>(null);
   const reduceMotion = useReducedMotion();
-
-  const select = useCallback(
-    (next: number) => {
-      setDirection(next > index || (index === events.length - 1 && next === 0) ? 1 : -1);
-      setIndex(next);
-    },
-    [events.length, index]
-  );
-
-  const advance = useCallback(() => {
-    select((index + 1) % events.length);
-  }, [events.length, index, select]);
+  const swipeGuard = useSwipeGuard();
 
   const active = events[index];
+
+  /** Saut direct depuis une pastille : referme le panneau, comme tout
+   *  changement de soirée. */
+  const goTo = useCallback(
+    (position: number) => {
+      setIndex(position);
+      setExpanded(false);
+      scrollRef.current?.scrollTo({ x: position * containerWidth, animated: !reduceMotion });
+    },
+    [containerWidth, reduceMotion]
+  );
+
+  const handleMomentumEnd = useCallback(
+    (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+      if (!containerWidth) return;
+      const position = Math.round(event.nativeEvent.contentOffset.x / containerWidth);
+      setIndex((current) => {
+        if (position === current) return current;
+        setExpanded(false);
+        return position;
+      });
+    },
+    [containerWidth]
+  );
+
+  /** Seule l'affiche actuellement active peut se déplier — un tap sur une
+   *  page voisine pendant le règlement du scroll ne doit rien faire. */
+  const toggleExpanded = useCallback(
+    (position: number) => {
+      if (position !== index) return;
+      setExpanded((open) => !open);
+    },
+    [index]
+  );
+
   if (!active) return null;
 
   return (
-    <YStack gap="$sm">
-      <Kicker>À l’affiche</Kicker>
+    <Animated.View
+      layout={
+        reduceMotion
+          ? undefined
+          : LinearTransition.springify().damping(20).stiffness(180).reduceMotion(ReduceMotion.System)
+      }
+    >
+      <YStack gap="$sm">
+        <Kicker>{kicker}</Kicker>
 
-      <PosterShell>
-        {/*
-          Les affiches se recouvrent (elles sont toutes en position absolue) :
-          la sortante s'efface pendant que l'entrante arrive, ce qui donne un
-          fondu enchaîné plutôt qu'un trou blanc entre les deux.
+        <ScrollView
+          ref={scrollRef}
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          decelerationRate="fast"
+          onLayout={(event) => setContainerWidth(event.nativeEvent.layout.width)}
+          onMomentumScrollEnd={handleMomentumEnd}
+          {...swipeGuard}
+        >
+          {events.map((event, position) => (
+            <PosterShell key={event.id} width={containerWidth}>
+              <Poster
+                transition={reduceMotion ? null : 'quick'}
+                pressStyle={{ opacity: 0.94 }}
+                accessibilityRole="button"
+                accessibilityState={{ expanded: expanded && position === index }}
+                accessibilityLabel={`${event.title}, ${event.when}. Toucher pour plus d’informations.`}
+                onPress={() => toggleExpanded(position)}
+              >
+                <Image
+                  source={event.image}
+                  style={StyleSheet.absoluteFill}
+                  contentFit="cover"
+                  transition={reduceMotion ? 0 : 300}
+                  accessibilityLabel={event.alt}
+                  cachePolicy="memory-disk"
+                />
 
-          Le style de sortie est neutre — un simple fondu, sans direction.
-          C'est volontaire : l'élément sortant conserve les props du rendu
-          précédent, sa direction serait donc en retard d'un cran.
-        */}
-        <AnimatePresence>
-          <Poster
-            key={active.id}
-            transition={reduceMotion ? null : 'medium'}
-            opacity={1}
-            x={0}
-            scale={1}
-            enterStyle={{ opacity: 0, x: direction * 48, scale: 0.96 }}
-            exitStyle={{ opacity: 0, scale: 0.98 }}
-            accessibilityRole="button"
-            accessibilityLabel={`${active.title}, ${active.when}. Toucher pour voir la soirée suivante.`}
-            onPress={advance}
-            pressStyle={{ scale: 0.98 }}
-          >
-            <Image
-              source={active.image}
-              style={StyleSheet.absoluteFill}
-              contentFit="cover"
-              transition={reduceMotion ? 0 : 300}
-              accessibilityLabel={active.alt}
-              cachePolicy="memory-disk"
-            />
+                <LinearGradient
+                  pointerEvents="none"
+                  colors={['rgba(12,23,32,0)', 'rgba(12,23,32,0.85)']}
+                  locations={[0.35, 1]}
+                  style={StyleSheet.absoluteFill}
+                />
 
-            <LinearGradient
-              pointerEvents="none"
-              colors={['rgba(12,23,32,0)', 'rgba(12,23,32,0.85)']}
-              locations={[0.35, 1]}
-              style={StyleSheet.absoluteFill}
-            />
+                <XStack position="absolute" top="$md" left="$md">
+                  <View
+                    backgroundColor={event.tagColor}
+                    paddingHorizontal="$sm"
+                    paddingVertical="$xs"
+                    borderRadius="$pill"
+                  >
+                    <Text style={[styles.tagLabel, { color: event.tagTextColor }]}>{event.tag}</Text>
+                  </View>
+                </XStack>
 
-            {/* Sur la photo, c'est le thème « lampion » qui donne le voile
-                sombre et le texte clair — aucune couleur écrite ici. */}
-            <Theme name="lampion">
-              <YStack gap="$base" padding="$md">
-                <Countdown startsAt={active.startsAt} />
-                <PosterTitle>{active.title}</PosterTitle>
-                <PosterMeta>{`${active.artist} · ${active.when}`}</PosterMeta>
-              </YStack>
-            </Theme>
-          </Poster>
-        </AnimatePresence>
-      </PosterShell>
+                {/* Sur la photo, c'est le thème « lampion » qui donne le voile
+                    sombre et le texte clair — aucune couleur écrite ici. */}
+                <Theme name="lampion">
+                  <YStack gap="$base" padding="$md">
+                    <Countdown startsAt={event.startsAt} />
+                    <PosterTitle>{event.title}</PosterTitle>
+                    <PosterMeta>{`${event.artist} · ${event.when}`}</PosterMeta>
+                  </YStack>
+                </Theme>
+              </Poster>
+            </PosterShell>
+          ))}
+        </ScrollView>
 
-      <XStack justifyContent="center" alignItems="center">
-        {events.map((event, position) => (
-          <DotTarget
-            key={event.id}
-            accessibilityRole="button"
-            accessibilityState={{ selected: position === index }}
-            accessibilityLabel={`Voir ${event.title}`}
-            onPress={() => select(position)}
-          >
-            <DotBar active={position === index} />
-          </DotTarget>
-        ))}
-      </XStack>
-    </YStack>
+        <XStack justifyContent="center" alignItems="center">
+          {events.map((event, position) => (
+            <DotTarget
+              key={event.id}
+              accessibilityRole="button"
+              accessibilityState={{ selected: position === index }}
+              accessibilityLabel={`Voir ${event.title}`}
+              onPress={() => goTo(position)}
+            >
+              <DotBar active={position === index} />
+            </DotTarget>
+          ))}
+        </XStack>
+
+        {expanded && <EventDetailPane key={active.id} event={active} />}
+      </YStack>
+    </Animated.View>
   );
 }
 
 export const EventSpotlight = memo(EventSpotlightComponent);
+
+const styles = StyleSheet.create({
+  tagLabel: {
+    // Les capitales sont une mise en forme : `events.ts` garde « Musique
+    // Live » en casse naturelle, la transformation se fait ici — comme dans
+    // `Button.tsx`, qui posait déjà le motif.
+    fontSize: 10,
+    lineHeight: 14,
+    letterSpacing: 0.6,
+    fontFamily: fonts.label,
+    fontWeight:600,
+    textTransform: 'uppercase',
+  },
+});

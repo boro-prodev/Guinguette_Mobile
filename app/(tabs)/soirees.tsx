@@ -1,53 +1,48 @@
 /**
- * Soirées & Bal — programmation et boutons « J'y serai » simulés.
+ * Soirées & Bal — deux carrousels du même composant : « À l'affiche »
+ * (toute la programmation) et « Les pépites » (sélection manuelle de
+ * l'exploitant, cf. `data/events.ts`).
  */
-import { useCallback, useMemo } from 'react';
-import { FlatList, StyleSheet, Text, View, type ListRenderItem } from 'react-native';
+import { useMemo } from 'react';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { EventCard } from '@/components/features/EventCard';
 import { EventSpotlight } from '@/components/features/EventSpotlight';
 import { Reveal } from '@/components/ui/Reveal';
 import { colors, spacing, type } from '@/constants/theme';
-import { events, type GuinguetteEvent } from '@/data/events';
-
+import { events } from '@/data/events';
+import { NBSP } from '@/utils/text';
 export default function SoireesScreen() {
-  const renderItem = useCallback<ListRenderItem<GuinguetteEvent>>(
-    ({ item }) => <EventCard event={item} />,
-    []
-  );
+  const pepites = useMemo(() => events.filter((event) => event.pepite), []);
 
-  const header = useMemo(
-    () => (
+  return (
+    <ScrollView
+      contentContainerStyle={styles.list}
+      showsVerticalScrollIndicator={false}
+    >
       <View style={styles.header}>
         <Reveal>
           <Text style={styles.title}>Soirées & Bal</Text>
         </Reveal>
         <Reveal delay={150}>
-          <Text style={styles.intro}>
-            Rejoignez-nous sous les lampions pour des soirées inoubliables au bord de l’eau.
-            Musique live, danse et convivialité au rendez-vous.
+          {/* `numberOfLines={1}` n'est pas cosmétique : sans lui, Android
+              mesure mal ce `Text` en Berkshire Swash et rogne « Incroyable »
+              en silence (ni retour à la ligne, ni points de suspension). */}
+          <Text style={styles.intro} numberOfLines={1}>
+            {`Ambiance Unique${NBSP}| Artiste Incroyable`}
           </Text>
         </Reveal>
-        <Reveal delay={300} fadeOnly style={styles.spotlight}>
-          <EventSpotlight events={events} />
-        </Reveal>
       </View>
-    ),
-    []
-  );
 
-  return (
-    <FlatList
-      data={events}
-      keyExtractor={(item) => item.id}
-      renderItem={renderItem}
-      ListHeaderComponent={header}
-      contentContainerStyle={styles.list}
-      showsVerticalScrollIndicator={false}
-      removeClippedSubviews
-      maxToRenderPerBatch={4}
-      windowSize={5}
-    />
+      <Reveal delay={300} fadeOnly style={styles.spotlight}>
+        <EventSpotlight kicker="À l’affiche" events={events} />
+      </Reveal>
+
+      {pepites.length > 0 && (
+        <Reveal delay={400} fadeOnly style={styles.spotlight}>
+          <EventSpotlight kicker="Les pépites" events={pepites} />
+        </Reveal>
+      )}
+    </ScrollView>
   );
 }
 
@@ -68,12 +63,11 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   intro: {
-    ...type.bodyLg,
+    ...type.headlineXs,
     color: colors.onSurfaceVariant,
     textAlign: 'center',
   },
   spotlight: {
     alignSelf: 'stretch',
-    marginTop: spacing.md,
   },
 });
