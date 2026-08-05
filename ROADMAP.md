@@ -952,8 +952,11 @@ se voit plus en release.
 ## Encore ouvert
 
 - **Est-ce qu'on garde le halo ?** C'est la signature « ampoule de guirlande » du
-  projet. Le rendre gratuit est faisable ; le supprimer serait plus simple mais
-  coûterait un morceau d'identité. À trancher en le voyant allégé.
+  projet. ~~Le rendre gratuit est faisable~~ — **c'est fait** (5 août 2026,
+  voir le Résultat partiel) : il ne coûte plus ni rendu ni montage. Le supprimer
+  serait toujours plus simple, mais coûterait un morceau d'identité **sans plus
+  rien économiser**. Ne reste donc qu'une question de goût, à trancher en le
+  voyant.
 
 ---
 
@@ -967,11 +970,11 @@ se voit plus en release.
 | ~~4~~ | ~~Forme exacte du signal de dépliage sur La Carte~~ **Tranché : une pastille ronde en bas à droite de la photo, chevron qui pivote.** La question supposait qu'on reprendrait le chevron du chantier 2 — il n'existait plus. **Reste à valider à l'œil.** | — | Réglé le 5 août 2026 |
 | ~~5~~ | ~~Deux boutons de même rang sur l'accueil, un second rétrogradé, ou un seul ?~~ **Tranché : les deux en verre (`tone="glass"`), le principal distingué par un anneau ambré qui bat (`emphasis`)**, pas par une couleur pleine. | — | Réglé le 4 août 2026 |
 | ~~6~~ | ~~La nouvelle accroche de Soirées tient-elle en 1–2 lignes ?~~ **Mesuré : oui, 2 lignes** sur 360 comme sur 412. Elle reste centrée. | — | Réglé le 3 août 2026 |
-| 7 | **Garde-t-on le halo du bouton ?** C'est la signature « ampoule », mais c'est aussi ce qui coûte un montage par appui | Chantier 4 | Oui — se tranche en le voyant allégé |
+| 7 | **Garde-t-on le halo du bouton ?** ~~C'est la signature « ampoule », mais c'est aussi ce qui coûte un montage par appui.~~ **La moitié technique de la question est réglée : il ne coûte plus rien** (`PressHalo`, monté une fois, piloté par valeur partagée — zéro rendu par appui). Ne reste que le goût : le garde-t-on ? **À voir à l'œil** — son apparence à l'appui n'a pas pu être vérifiée sur émulateur, un fondu de 560 ms n'étant pas saisissable par `screencap`. | Chantier 4 | Oui — se tranche en le voyant |
 | 8 | **Le « freeze » survit-il à un build de production ?** À mesurer au moniteur de performance avant d'optimiser. **Première mesure, 5 août 2026** (`dumpsys gfxinfo`, émulateur) : 96,4 % d'images saccadées, 50ᵉ centile à 129 ms, **centile GPU à 4950 ms** — l'AVD tourne en rendu logiciel (`swiftshader`, imposé par le driver du poste), donc ces chiffres ne disent **rien** de l'app. À refaire sur téléphone réel, c'est le seul verdict qui vaudra. | Chantier 4 | Non — c'est la première étape du chantier |
 | ~~9~~ | ~~**L'accroche de La Carte passe à 3 lignes sur 360 px.** Raccourcir, aligner à gauche, ou assumer ?~~ **Tranché : raccourcie deux fois** — « Produits locaux, plats gourmands », une seule ligne à 360 comme à 412. Garder « et élégants » tenait en 2 lignes mais laissait « élégants » orphelin. | — | Réglé le 5 août 2026 |
-| 11 | **Coupe-t-on les décorations de l'accueil ?** Rien ne fuit (tous les timers sont nettoyés), mais l'accueil n'est jamais démonté : l'anneau `emphasis`, les 4 ampoules de la guirlande et le battement du `Countdown` tournent en boucle **même quand on est sur un autre onglet**. Les figer (`useIsFocused`) ne changerait rien à l'image. Demandé puis suspendu par Jonathan le 5 août, faute d'avoir tranché entre « c'est plus fluide ? » et « c'est plus beau ? ». | Chantier 4 | Oui — dépend de la mesure sur téléphone (question 8) |
 | 10 | **Voile global à 0,32, ou écran local derrière le seul bloc de texte ?** Le second garde la vidéo vive en haut et en bas | Chantier 1d | Oui — se juge à l'écran |
+| 11 | **Coupe-t-on les décorations de l'accueil ?** Rien ne fuit (tous les timers sont nettoyés), mais l'accueil n'est jamais démonté : l'anneau `emphasis`, les 4 ampoules de la guirlande et le battement du `Countdown` tournent en boucle **même quand on est sur un autre onglet**. Les figer (`useIsFocused`) ne changerait rien à l'image. Demandé puis suspendu par Jonathan le 5 août, faute d'avoir tranché entre « c'est plus fluide ? » et « c'est plus beau ? ». | Chantier 4 | Oui — dépend de la mesure sur téléphone (question 8) |
 
 ---
 
