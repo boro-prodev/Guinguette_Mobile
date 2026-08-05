@@ -131,6 +131,7 @@ function ArtistSpotlightComponent({
         <PosterFrame
           items={artists}
           activeIndex={index}
+          keyExtractor={(artist) => artist.id}
           onCommit={handleCommit}
           pageFollowX={pageFollowX}
           accessibilityLabel={(artist) => {

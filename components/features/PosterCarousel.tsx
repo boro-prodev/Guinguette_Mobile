@@ -33,6 +33,23 @@
  * de l'animation de glissement, jamais au relâchement du doigt — c'est ce qui
  * permet au panneau de détails de changer exactement au même instant que
  * l'affiche.
+ *
+ * ⚠️ **Troisième révision, le 5 août 2026 (nuit).** Cette version-là avait
+ * encore deux défauts, vus à l'écran par Jonathan et corrigés dans
+ * `PosterFrame` — les deux invariants qui en sortent sont documentés sur le
+ * composant lui-même, à lire avant d'y toucher :
+ * 1. **l'affiche faisait un aller-retour** (suivante, retour à l'ancienne,
+ *    puis enfin la suivante) — la bande était reposée à 0 sur le thread UI
+ *    avant que le nouvel index n'arrive par un rendu React ;
+ * 2. **une affiche s'affichait sans sa photo**, fond gris et texte seuls —
+ *    les emplacements étaient identifiés par leur place et non par leur
+ *    élément, donc chaque changement remplaçait la `source` d'une `<Image>`
+ *    déjà montée, et expo-image repartait d'un fondu à vide ;
+ * 3. **le clignotement est revenu sous une autre forme** — un bref éclair de
+ *    l'affiche *d'après* (« image 1 → image 3 → image 2 »), parce que le
+ *    correctif du point 1 lisait encore `shift` dans un worklet alors que les
+ *    positions des affiches, elles, sont un style ordinaire. Deux chemins,
+ *    donc deux instants. Corrigé le 5 août 2026 en fin de course.
  */
 import { useCallback, useMemo, useState, type ReactNode } from 'react';
 import {
@@ -178,6 +195,10 @@ const SLIDE_CONFIG = { duration: 260, easing: Easing.out(Easing.cubic) };
 type PosterFrameProps<T> = {
   items: T[];
   activeIndex: number;
+  /** Identité stable d'un élément — c'est elle qui sert de `key` à son
+   *  affiche, et donc ce qui garantit qu'une image déjà décodée n'est jamais
+   *  remontée (voir `PosterFrame`). */
+  keyExtractor: (item: T) => string;
   onCommit: (direction: 1 | -1) => void;
   accessibilityLabel: (item: T) => string;
   renderPoster: (item: T) => ReactNode;
@@ -191,15 +212,50 @@ type PosterFrameProps<T> = {
  * milieu tant qu'on ne glisse pas. Glisser translate toute la bande — la
  * voisine devient donc visible en vrai, jamais un fond vide.
  *
+ * ⚠️ **Deux pièges rencontrés à l'écran, et leurs deux invariants. Ne pas
+ * défaire l'un sans comprendre l'autre.**
+ *
+ * **1. La bande ne se « repose » jamais à 0 — elle avance, et c'est un style
+ * ORDINAIRE qui l'annule.** Le premier essai remettait `dragX` à 0 en même
+ * temps qu'il appelait `onCommit`. Mais l'un s'applique sur le thread UI et
+ * l'autre passe par un rendu React : la remise à 0 arrivait à l'écran **avant**
+ * le nouvel index, et on voyait l'affiche suivante, puis un retour brutal à
+ * l'ancienne, puis enfin la nouvelle (« image 2, image 1, image 2 »). La bande
+ * garde donc sa position et c'est un décalage compté en largeurs, `shift`, qui
+ * l'annule — `shift` étant un état React, il change **dans le même rendu** que
+ * `activeIndex` chez l'appelant (React 18 regroupe les deux `setState` du même
+ * bloc). Invariant au repos : `dragX === shift × largeur`, position visible
+ * `dragX − shift × largeur`, soit 0.
+ *
+ * ⚠️ **Encore fallait-il le LIRE au bon endroit.** Une deuxième version tenait
+ * cet invariant mais consommait `shift` dans le worklet du style animé, avec
+ * les `left` des affiches restés en style ordinaire. Deux chemins, deux
+ * instants : au commit, les `left` se réattribuaient autour du nouvel index
+ * pendant que la bande était encore décalée d'une largeur, et l'image ainsi
+ * gagnée montrait la case `+1` du NOUVEL index — « image 1, bref éclair
+ * d'image 3, puis image 2 ». Vu à l'écran par Jonathan le 5 août 2026.
+ * L'annulation vit donc sur une vue intercalée en style React Native
+ * ordinaire : `translateX` et `left` sont alors deux styles du même rendu, et
+ * rien ne peut plus s'intercaler entre eux. Le thread UI ne porte plus que
+ * `dragX`, déjà arrivé à destination avant le commit.
+ *
+ * **2. Une affiche est identifiée par son élément, jamais par sa place.**
+ * Les trois emplacements étaient d'abord fixes (précédente/active/suivante) :
+ * à chaque changement, la **même** `<Image>` recevait une nouvelle `source`,
+ * donc expo-image refaisait son fondu depuis le vide — on voyait le fond gris
+ * du cadre et le texte, sans photo, le temps du décodage. Chaque affiche porte
+ * maintenant la `key` de son élément (`keyExtractor`) et ne fait que changer
+ * de `left` : React conserve l'instance, l'image reste décodée, et il n'y a
+ * plus rien à recharger en cours de route.
+ *
  * Tap et swipe-abouti déclenchent la **même** glissade programmatique
- * (`SLIDE_CONFIG`) ; `onCommit` n'est appelé qu'à la fin de cette glissade,
- * au même moment où `dragX` revient à 0 — l'appelant peut donc faire changer
- * l'affiche et le panneau de détails dans le même instant, sans jamais les
- * désynchroniser.
+ * (`SLIDE_CONFIG`) ; `onCommit` n'est appelé qu'à la fin de celle-ci, ce qui
+ * fait changer l'affiche et le panneau de détails dans le même instant.
  */
 export function PosterFrame<T>({
   items,
   activeIndex,
+  keyExtractor,
   onCommit,
   accessibilityLabel,
   renderPoster,
@@ -207,13 +263,15 @@ export function PosterFrame<T>({
 }: PosterFrameProps<T>) {
   const reduceMotion = useReducedMotion();
   const { width: windowWidth } = useWindowDimensions();
-  // Nombre JS ordinaire, pas une valeur partagée : capturé par copie dans les
-  // worklets ci-dessous à chaque reconstruction du geste (`useMemo`). Mesuré
-  // via `onLayout`, avec la largeur de fenêtre comme repli tant qu'il n'a pas
-  // encore mesuré — jamais 0, sans quoi la glissade viserait sa position de
+  // Mesurée via `onLayout`, avec la largeur de fenêtre comme repli tant qu'elle
+  // n'a pas mesuré — jamais 0, sans quoi la glissade viserait sa position de
   // départ et « réussirait » sans jamais rien montrer à l'écran.
   const [containerWidth, setContainerWidth] = useState(windowWidth);
+  // Décalage de la bande, compté en largeurs — voir le piège 1 ci-dessus.
+  const [shift, setShift] = useState(0);
   const dragX = useSharedValue(0);
+  /** Position de repos au début du geste courant — voir `onBegin`. */
+  const restX = useSharedValue(0);
   const pressScale = useSharedValue(1);
   // Vrai pendant qu'une glissade programmatique est en cours (tap, ou swipe
   // qui a franchi le seuil) : un second geste qui arriverait pendant ce court
@@ -222,19 +280,33 @@ export function PosterFrame<T>({
   const isAnimating = useSharedValue(false);
   const count = items.length;
 
-  const onLayout = useCallback((event: LayoutChangeEvent) => {
-    setContainerWidth(event.nativeEvent.layout.width);
-  }, []);
+  const onLayout = useCallback(
+    (event: LayoutChangeEvent) => {
+      const measured = event.nativeEvent.layout.width;
+      setContainerWidth((current) => {
+        // La largeur entre dans l'invariant `dragX === shift × largeur` : si
+        // elle change une fois la bande décalée, il faut y replacer `dragX`.
+        if (measured !== current) dragX.value = shift * measured;
+        return measured;
+      });
+    },
+    [dragX, shift]
+  );
 
-  /** Repose la bande à 0 et ne fait avancer l'état qu'à cet instant précis —
-   *  c'est ce couplage qui synchronise l'affiche et le panneau appelant. */
+  /**
+   * Fin de glissade. `setShift` et `onCommit` sont dans le même bloc
+   * synchrone : React 18 les regroupe en un seul rendu, donc le décalage de la
+   * bande et le nouvel index arrivent **ensemble** à l'écran — c'est tout ce
+   * qui empêche l'aller-retour d'image décrit plus haut. `dragX`, lui, n'est
+   * pas touché : il est déjà à sa nouvelle position de repos.
+   */
   const finishSlide = useCallback(
     (direction: 1 | -1) => {
-      dragX.value = 0;
       isAnimating.value = false;
+      setShift((current) => current - direction);
       onCommit(direction);
     },
-    [dragX, isAnimating, onCommit]
+    [isAnimating, onCommit]
   );
 
   const gesture = useMemo(() => {
@@ -248,11 +320,15 @@ export function PosterFrame<T>({
       .failOffsetY([-12, 12])
       .onBegin(() => {
         if (isAnimating.value) return;
+        // Position de repos du moment, relevée sur le thread UI plutôt que
+        // recalculée depuis `shift` : le worklet n'a ainsi jamais à faire
+        // confiance à une valeur JS qui pourrait dater d'un rendu précédent.
+        restX.value = dragX.value;
         pressScale.value = withTiming(0.98, { duration: 80 });
       })
       .onUpdate((event) => {
         if (reduceMotion || isAnimating.value) return;
-        dragX.value = event.translationX;
+        dragX.value = restX.value + event.translationX;
         if (pageFollowX) pageFollowX.value = event.translationX * PAGE_FOLLOW;
       })
       .onEnd((event) => {
@@ -262,17 +338,18 @@ export function PosterFrame<T>({
           Math.abs(event.velocityX) > SWIPE_VELOCITY;
 
         if (!passed) {
-          dragX.value = withSpring(0, FOLLOW_SPRING);
+          dragX.value = withSpring(restX.value, FOLLOW_SPRING);
           return;
         }
 
         const direction: 1 | -1 = event.translationX < 0 ? 1 : -1;
+        const target = restX.value - direction * containerWidth;
         if (reduceMotion) {
-          dragX.value = 0;
+          dragX.value = target;
           runOnJS(finishSlide)(direction);
         } else {
           isAnimating.value = true;
-          dragX.value = withTiming(-direction * containerWidth, SLIDE_CONFIG, (finished) => {
+          dragX.value = withTiming(target, SLIDE_CONFIG, (finished) => {
             if (finished) runOnJS(finishSlide)(direction);
           });
         }
@@ -287,16 +364,18 @@ export function PosterFrame<T>({
       .maxDistance(10)
       .onBegin(() => {
         if (isAnimating.value) return;
+        restX.value = dragX.value;
         pressScale.value = withTiming(0.98, { duration: 80 });
       })
       .onEnd((_event, success) => {
         if (!success || isAnimating.value) return;
+        const target = restX.value - containerWidth;
         if (reduceMotion) {
-          dragX.value = 0;
+          dragX.value = target;
           runOnJS(finishSlide)(1);
         } else {
           isAnimating.value = true;
-          dragX.value = withTiming(-containerWidth, SLIDE_CONFIG, (finished) => {
+          dragX.value = withTiming(target, SLIDE_CONFIG, (finished) => {
             if (finished) runOnJS(finishSlide)(1);
           });
         }
@@ -306,7 +385,17 @@ export function PosterFrame<T>({
       });
 
     return Gesture.Race(pan, tap);
-  }, [containerWidth, count, dragX, finishSlide, isAnimating, pageFollowX, pressScale, reduceMotion]);
+  }, [
+    containerWidth,
+    count,
+    dragX,
+    finishSlide,
+    isAnimating,
+    pageFollowX,
+    pressScale,
+    reduceMotion,
+    restX,
+  ]);
 
   // Le scale de pression vit sur ce wrapper, à l'EXTÉRIEUR de PosterShell :
   // toute la carte arrondie rétrécit comme un seul bloc. Posé plus bas (sur
@@ -317,15 +406,46 @@ export function PosterFrame<T>({
     transform: [{ scale: pressScale.value }],
   }));
 
+  // La bande ne porte QUE le geste. L'annulation du décalage (`shift`) vit sur
+  // une vue intercalée, en style ordinaire — voir le piège 1 sur le composant.
   const stripStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: dragX.value }],
   }));
 
+  /**
+   * Les trois affiches montées, chacune avec son décalage relatif à l'active
+   * (−1 à gauche, 0 au centre, +1 à droite). C'est la **clé de l'élément** qui
+   * identifie chaque affiche, pas sa place : changer d'index ne fait donc que
+   * déplacer des vues déjà rendues, sans jamais recharger une image.
+   * `seen` couvre le cas d'une liste trop courte pour que précédente et
+   * suivante soient deux éléments distincts.
+   */
+  const slots = useMemo(() => {
+    const entries: { key: string; item: T; offset: number }[] = [];
+    const seen = new Set<string>();
+
+    const push = (index: number, offset: number) => {
+      const item = items[index];
+      if (!item) return;
+      const key = keyExtractor(item);
+      if (seen.has(key)) return;
+      seen.add(key);
+      entries.push({ key, item, offset });
+    };
+
+    push(activeIndex, 0);
+    if (count > 1) {
+      push((activeIndex + 1) % count, 1);
+      push((activeIndex - 1 + count) % count, -1);
+    }
+
+    // Ordre de rendu figé sur la clé : les affiches ne changent que de `left`
+    // d'un rendu à l'autre, jamais de position dans l'arbre.
+    return entries.sort((a, b) => a.key.localeCompare(b.key));
+  }, [activeIndex, count, items, keyExtractor]);
+
   const active = items[activeIndex];
   if (!active) return null;
-
-  const prevItem = items[(activeIndex - 1 + count) % count];
-  const nextItem = items[(activeIndex + 1) % count];
 
   return (
     <Animated.View style={pressStyle}>
@@ -336,29 +456,32 @@ export function PosterFrame<T>({
             accessibilityRole="button"
             accessibilityLabel={accessibilityLabel(active)}
           >
-            {count > 1 && <PosterSlot position="prev">{renderPoster(prevItem)}</PosterSlot>}
-            <PosterSlot position="current">{renderPoster(active)}</PosterSlot>
-            {count > 1 && <PosterSlot position="next">{renderPoster(nextItem)}</PosterSlot>}
+            {/*
+              Cette vue-ci annule le décalage accumulé, et elle est en style
+              React Native ORDINAIRE — pas animé. C'est tout l'intérêt : son
+              `translateX` et les `left` des affiches sont deux styles du même
+              rendu, donc validés dans le même commit, donc impossibles à voir
+              l'un sans l'autre. Portée par un worklet, l'annulation arrivait
+              une image APRÈS la réattribution des `left`, et cette image-là
+              montrait la voisine d'après (piège 1).
+            */}
+            <RNView
+              style={[
+                StyleSheet.absoluteFill,
+                { transform: [{ translateX: -shift * containerWidth }] },
+              ]}
+            >
+              {slots.map(({ key, item, offset }) => (
+                <RNView key={key} style={[styles.slot, { left: `${offset * 100}%` }]}>
+                  {renderPoster(item)}
+                </RNView>
+              ))}
+            </RNView>
           </Animated.View>
         </GestureDetector>
       </PosterShell>
     </Animated.View>
   );
-}
-
-/** Une des trois places de la bande — prend `left` en pourcentage plutôt
- *  qu'en pixels : pas besoin de connaître la largeur pour se positionner,
- *  seule la translation de la bande entière (`stripStyle`, en pixels) en a
- *  besoin. */
-function PosterSlot({
-  position,
-  children,
-}: {
-  position: 'prev' | 'current' | 'next';
-  children: ReactNode;
-}) {
-  const left = position === 'prev' ? '-100%' : position === 'next' ? '100%' : '0%';
-  return <RNView style={[styles.slot, { left }]}>{children}</RNView>;
 }
 
 const styles = StyleSheet.create({

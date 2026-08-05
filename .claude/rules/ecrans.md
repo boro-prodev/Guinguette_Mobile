@@ -60,9 +60,41 @@ swipe-abouti déclenchent la **même** glissade programmatique (durée fixe,
 
 ⚠️ **Point clé pour la synchronisation : l'état ne change qu'à la fin de la
 glissade**, jamais au relâchement du doigt. `onCommit` n'est appelé que dans
-le callback de fin de `withTiming`, au même moment où `dragX` revient à 0 —
-c'est ce couplage qui permet à l'affiche et au panneau de détails de changer
-exactement au même instant, sans jamais désynchroniser l'un de l'autre.
+le callback de fin de `withTiming` — c'est ce qui permet à l'affiche et au
+panneau de détails de changer exactement au même instant.
+
+⚠️ **La bande ne se « repose » jamais à 0 — elle avance.** Une version
+intermédiaire remettait `dragX` à 0 en même temps qu'elle appelait `onCommit` :
+la remise à 0 s'applique sur le thread UI, le nouvel index passe par un rendu
+React, donc la première arrivait à l'écran avant le second et on voyait
+l'affiche suivante, puis un retour brutal à l'ancienne, puis enfin la nouvelle
+(« image 2, image 1, image 2 »). `dragX` garde désormais sa position et c'est
+un décalage compté en largeurs, `shift`, qui l'annule. `shift` étant un état
+React posé dans le **même bloc synchrone** que `onCommit`, les deux arrivent
+dans le même rendu. L'invariant au repos : `dragX === shift × largeur`, donc la
+position visible `dragX − shift × largeur` vaut 0. Ne pas réintroduire de
+remise à zéro.
+
+⚠️ **Et `shift` se lit en style ORDINAIRE, jamais dans un worklet.** Le premier
+correctif ci-dessus tenait l'invariant mais consommait `shift` dans le style
+animé de la bande, alors que les positions des trois affiches (`left`) sont un
+style React Native ordinaire. Deux chemins, donc deux instants : au commit, les
+`left` se réattribuaient autour du nouvel index pendant que la bande était
+encore décalée d'une largeur, et cette image-là montrait la case `+1` du
+**nouvel** index — un bref éclair de l'affiche d'après, « image 1, image 3,
+image 2 ». L'annulation vit donc sur une vue intercalée en style ordinaire,
+validée dans le même commit que les `left`. Le thread UI ne porte plus que
+`dragX`, déjà arrivé avant le commit. Vu à l'écran par Jonathan, corrigé le
+5 août 2026.
+
+⚠️ **Une affiche est identifiée par son élément, jamais par sa place.** Les
+trois emplacements ont d'abord été fixes (précédente/active/suivante) : à
+chaque changement, la **même** `<Image>` recevait une nouvelle `source`, donc
+expo-image refaisait son fondu depuis le vide — on voyait le fond gris du cadre
+et le texte, sans photo, le temps du décodage. Chaque affiche porte maintenant
+la `key` de son élément (prop `keyExtractor`, fournie par `EventSpotlight` et
+`ArtistSpotlight`) et ne fait que changer de `left` : React conserve
+l'instance, l'image reste décodée.
 
 ⚠️ **Le scale de pression vit sur un wrapper à l'EXTÉRIEUR de `PosterShell`**,
 jamais sur un enfant qu'elle clippe : toute la carte arrondie rétrécit comme

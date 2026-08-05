@@ -130,6 +130,7 @@ function EventSpotlightComponent({
         <PosterFrame
           items={events}
           activeIndex={index}
+          keyExtractor={(event) => event.id}
           onCommit={handleCommit}
           pageFollowX={pageFollowX}
           accessibilityLabel={(event) =>
