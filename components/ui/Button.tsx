@@ -22,8 +22,9 @@
  * contour — l'ampoule d'une guirlande qu'on vient d'allumer.
  */
 import { BlurView } from 'expo-blur';
-import type { ReactNode } from 'react';
+import type { ReactNode, RefObject } from 'react';
 import { Children, isValidElement, useCallback, useEffect, useRef, useState } from 'react';
+import type { View as RNViewInstance } from 'react-native';
 import { View as RNView, StyleSheet } from 'react-native';
 import Reanimated, {
   Easing,
@@ -260,8 +261,23 @@ function EmphasisRing() {
  * plutôt que déclenché au toucher. De quoi rétablir un rang principal quand
  * deux boutons `tone="glass"` partagent sinon exactement le même traitement —
  * sans revenir à un aplat de couleur qui casserait l'esthétique verre.
+ *
+ * ⚠️ **Sur Android, le flou n'a lieu QUE si l'appelant fournit `blurTarget`.**
+ * `dimezisBlurView` ne floute pas « ce qu'il y a dessous » tout seul : il lui
+ * faut la référence d'un `BlurTargetView` qui enveloppe explicitement le
+ * contenu à flouter. Sans elle, expo-blur retombe sur `'none'` — un simple
+ * voile semi-transparent — en le signalant au démarrage :
+ * « You have selected the "dimezisBlurView" blur method, but the `blurTarget`
+ * prop has not been configured ». Le bouton reste lisible, mais ce n'est plus
+ * du verre. Voir `app/(tabs)/index.tsx` pour le seul appelant qui le câble.
  */
-function ButtonGlassFill({ emphasis = false }: { emphasis?: boolean }) {
+function ButtonGlassFill({
+  emphasis = false,
+  blurTarget,
+}: {
+  emphasis?: boolean;
+  blurTarget?: RefObject<RNViewInstance | null>;
+}) {
   const theme = useTheme();
 
   return (
@@ -290,7 +306,11 @@ function ButtonGlassFill({ emphasis = false }: { emphasis?: boolean }) {
         <BlurView
           intensity={40}
           tint="dark"
-          blurMethod="dimezisBlurView"
+          // Sans cible, `dimezisBlurView` se dégrade en `'none'` et prévient au
+          // démarrage : autant demander `'none'` franchement que réclamer un
+          // flou qu'on sait impossible. iOS floute de toute façon sans cible.
+          blurMethod={blurTarget ? 'dimezisBlurView' : 'none'}
+          blurTarget={blurTarget}
           style={StyleSheet.absoluteFill}
         />
         <RNView
@@ -315,6 +335,15 @@ export type ButtonProps = ButtonFrameProps & {
    * leur hiérarchie par la couleur pleine.
    */
   emphasis?: boolean;
+  /**
+   * `tone="glass"` sur **Android** uniquement : la référence du
+   * `BlurTargetView` (`expo-blur`) qui enveloppe le contenu à flouter — sans
+   * elle, pas de flou du tout, juste un voile (cf. `ButtonGlassFill`). Un même
+   * `BlurTargetView` sert plusieurs boutons tant qu'ils tiennent dans ses
+   * limites, et c'est le montage recommandé : une cible par bouton coûterait
+   * une capture de plus à chaque image.
+   */
+  blurTarget?: RefObject<RNViewInstance | null>;
 };
 
 function ButtonImpl({
@@ -324,6 +353,7 @@ function ButtonImpl({
   disabled,
   tone = 'solid',
   emphasis = false,
+  blurTarget,
   ...props
 }: ButtonProps) {
   const [pulses, setPulses] = useState<number[]>([]);
@@ -380,7 +410,7 @@ function ButtonImpl({
       onPress={disabled ? undefined : onPress}
       {...props}
     >
-      {tone === 'glass' && <ButtonGlassFill emphasis={emphasis} />}
+      {tone === 'glass' && <ButtonGlassFill emphasis={emphasis} blurTarget={blurTarget} />}
       {pulses.map((id) => (
         <Halo
           key={id}

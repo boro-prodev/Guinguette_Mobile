@@ -15,6 +15,7 @@
  * atténuée, elle n'est pas jouée.
  */
 import { useEvent, useEventListener } from 'expo';
+import { BlurTargetView } from 'expo-blur';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
@@ -89,6 +90,14 @@ export default function HomeScreen() {
   const primaryOpacity = useSharedValue(0);
   const secondaryOpacity = useSharedValue(0);
   const introTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
+
+  /**
+   * La cible du flou des deux boutons « verre » — voir `backdrop` dans le
+   * rendu. **Une seule pour les deux** : expo-blur sait servir plusieurs
+   * `BlurView` depuis une même cible tant qu'ils tiennent dans ses limites, et
+   * c'est nettement moins coûteux qu'une capture par bouton.
+   */
+  const backdropRef = useRef<View | null>(null);
 
   /**
    * L'ouverture est jouée, ou elle ne le sera pas. Dans les deux cas les
@@ -201,52 +210,64 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.screen}>
-      <Animated.View style={[StyleSheet.absoluteFill, zoomStyle]}>
-        <Image
-          source={require('../../assets/images/ambiance-soiree.webp')}
-          style={StyleSheet.absoluteFill}
-          contentFit="cover"
-          priority="high"
-          accessibilityLabel="Soirée festive à la guinguette : guirlandes lumineuses au-dessus des tables rustiques, dans une ambiance conviviale."
-        />
-      </Animated.View>
-
-      {!reduceMotion && (
-        <Animated.View style={[StyleSheet.absoluteFill, videoStyle]} pointerEvents="none">
-          <VideoView
-            player={player}
+      {/*
+        Tout le fond — photo, vidéo, voile et dégradés — vit dans CE conteneur,
+        et pas seulement par goût du rangement : c'est la cible que les deux
+        boutons « verre » floutent (`blurTarget`). Sur Android, `expo-blur` ne
+        floute pas « ce qu'il y a dessous » tout seul, il floute le contenu
+        d'un `BlurTargetView` désigné nommément. Ce qui doit apparaître dans le
+        verre doit donc être ici ; ce qui reste dehors (le titre, l'accroche,
+        les boutons eux-mêmes) n'y apparaîtra pas — ce qui est bien l'effet
+        recherché, un bouton ne se floute pas lui-même.
+      */}
+      <BlurTargetView ref={backdropRef} style={StyleSheet.absoluteFill} pointerEvents="none">
+        <Animated.View style={[StyleSheet.absoluteFill, zoomStyle]}>
+          <Image
+            source={require('../../assets/images/ambiance-soiree.webp')}
             style={StyleSheet.absoluteFill}
             contentFit="cover"
-            nativeControls={false}
-            // Décorative et déjà décrite par l'image du dessous : on ne la
-            // donne pas une seconde fois aux lecteurs d'écran.
-            accessibilityElementsHidden
-            importantForAccessibility="no-hide-descendants"
-            // `surfaceView` (le défaut Android) se dessine dans sa propre
-            // couche et passerait AU-DESSUS des dégradés et du texte.
-            surfaceType="textureView"
+            priority="high"
+            accessibilityLabel="Soirée festive à la guinguette : guirlandes lumineuses au-dessus des tables rustiques, dans une ambiance conviviale."
           />
         </Animated.View>
-      )}
 
-      {/* Voile plat + les deux lavis directionnels du dégradé `hero-duotone`. */}
-      <View style={styles.veil} pointerEvents="none" />
-      <LinearGradient
-        pointerEvents="none"
-        colors={['rgba(240,173,74,0.28)', 'rgba(240,173,74,0)']}
-        locations={[0, 0.42]}
-        start={{ x: 0, y: 1 }}
-        end={{ x: 0, y: 0 }}
-        style={StyleSheet.absoluteFill}
-      />
-      <LinearGradient
-        pointerEvents="none"
-        colors={['rgba(12,23,32,0.6)', 'rgba(12,23,32,0)']}
-        locations={[0, 0.38]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 0, y: 1 }}
-        style={StyleSheet.absoluteFill}
-      />
+        {!reduceMotion && (
+          <Animated.View style={[StyleSheet.absoluteFill, videoStyle]} pointerEvents="none">
+            <VideoView
+              player={player}
+              style={StyleSheet.absoluteFill}
+              contentFit="cover"
+              nativeControls={false}
+              // Décorative et déjà décrite par l'image du dessous : on ne la
+              // donne pas une seconde fois aux lecteurs d'écran.
+              accessibilityElementsHidden
+              importantForAccessibility="no-hide-descendants"
+              // `surfaceView` (le défaut Android) se dessine dans sa propre
+              // couche et passerait AU-DESSUS des dégradés et du texte.
+              surfaceType="textureView"
+            />
+          </Animated.View>
+        )}
+
+        {/* Voile plat + les deux lavis directionnels du dégradé `hero-duotone`. */}
+        <View style={styles.veil} pointerEvents="none" />
+        <LinearGradient
+          pointerEvents="none"
+          colors={['rgba(240,173,74,0.28)', 'rgba(240,173,74,0)']}
+          locations={[0, 0.42]}
+          start={{ x: 0, y: 1 }}
+          end={{ x: 0, y: 0 }}
+          style={StyleSheet.absoluteFill}
+        />
+        <LinearGradient
+          pointerEvents="none"
+          colors={['rgba(12,23,32,0.6)', 'rgba(12,23,32,0)']}
+          locations={[0, 0.38]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 0, y: 1 }}
+          style={StyleSheet.absoluteFill}
+        />
+      </BlurTargetView>
 
       <View style={[styles.content, { paddingTop: insets.top + spacing.xl }]}>
         <Reveal delay={0}>
@@ -306,6 +327,7 @@ export default function HomeScreen() {
               size="lg"
               full
               emphasis
+              blurTarget={backdropRef}
               accessibilityLabel="Réserver une table"
               onPress={open}
             >
@@ -318,6 +340,7 @@ export default function HomeScreen() {
               theme="neutral"
               tone="glass"
               size="md"
+              blurTarget={backdropRef}
               accessibilityLabel="Voir les prochaines soirées"
               onPress={() => router.navigate('/soirees')}
             >

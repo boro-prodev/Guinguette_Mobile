@@ -59,6 +59,20 @@ mécanique que le point du `Countdown`) : de quoi garder un rang principal
 quand deux boutons `glass` partagent sinon le même traitement, sans revenir à
 un aplat de couleur.
 
+⚠️ **Sur Android, `tone="glass"` ne floute QUE si l'appelant passe
+`blurTarget`.** Depuis expo-blur 57, `dimezisBlurView` ne floute pas « ce qu'il
+y a dessous » tout seul : il lui faut la référence d'un `BlurTargetView` qui
+enveloppe explicitement le contenu à flouter. Sans elle, expo-blur retombe
+silencieusement sur un voile semi-transparent, en le signalant à chaque montage
+(« the `blurTarget` prop has not been configured » — deux fois au démarrage,
+une par bouton de l'accueil, jusqu'au 5 août 2026).
+`app/(tabs)/index.tsx` est le montage de référence : **une seule** cible
+enveloppe tout le fond (photo, vidéo, voile, dégradés) et sert les **deux**
+boutons — expo-blur l'autorise tant qu'ils tiennent dans ses limites, et une
+cible par bouton coûterait une capture de plus par image. Ce qui doit
+apparaître dans le verre vit donc dans cette cible ; ce qui reste dehors n'y
+apparaîtra pas — un bouton ne se floute pas lui-même.
+
 ## Trois primitives tactiles, à ne pas confondre
 
 | Primitive | Pour quoi |
