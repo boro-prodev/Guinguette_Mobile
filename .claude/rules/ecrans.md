@@ -29,20 +29,50 @@ n'a plus besoin de s'en prémunir.
 
 ## Le carrousel de l'écran Soirées se pilote au tap **et** au swipe
 
-« À l'affiche » et « Artist Spot » (`EventSpotlight`/`ArtistSpotlight`,
-mécanique commune dans `components/features/PosterCarousel.tsx`) offrent deux
-façons équivalentes d'avancer :
+« À l'affiche » et « Artist Spot » (`EventSpotlight`/`ArtistSpotlight`) partagent
+un seul composant, `PosterFrame` (`components/features/PosterCarousel.tsx`),
+qui porte **toute** la mécanique — geste, rendu, retour tactile. Deux façons
+équivalentes d'avancer :
 
-- **le tap sur l'affiche** — avance toujours à l'élément suivant, en boucle ;
-- **le swipe horizontal** — un `Gesture.Pan()` posé sur l'affiche, gauche pour
-  avancer, droite pour reculer, avec un aperçu qui suit le doigt
-  (`dragX`, amorti) et un seuil de distance/vitesse pour valider le
-  changement ; en dessous du seuil, l'affiche revient au centre par un ressort.
+- **le tap sur l'affiche** ;
+- **le swipe horizontal** — gauche pour avancer, droite pour reculer.
 
-Les deux déclenchent le **même changement d'état** (`activeId`/`activeEventId`
-dans `soirees.tsx`), donc la **même transition** `AnimatePresence` (fondu +
-scale) prend le relais une fois le changement validé — le geste de glissement
-n'est qu'un aperçu, jamais la transition finale elle-même.
+⚠️ **Ce n'est pas un crossfade.** La première version (`AnimatePresence`,
+fondu + scale) a été abandonnée le 5 août 2026 (soir) après trois défauts
+remontés par Jonathan à l'écran :
+
+1. le panneau de détails (remonté par `key`) changeait de contenu avant que
+   l'affiche ait fini son fondu — jamais synchronisés ;
+2. glisser le doigt révélait le fond blanc de `PosterShell` derrière
+   l'affiche qui suivait le doigt, puisqu'une seule affiche était montée à
+   la fois ;
+3. le retour tactile au tap (`scale` posé sur un enfant *clippé* par
+   `PosterShell`) révélait à la fois ce fond blanc et le contour carré, non
+   arrondi, de l'enfant.
+
+**`PosterFrame` est un vrai carrousel à trois affiches** (précédente / active
+/ suivante), toujours montées côte à côte dans une bande que `PosterShell`
+(overflow `hidden`) ne laisse voir qu'au milieu tant qu'on ne glisse pas.
+Glisser translate la bande entière : la voisine devient donc visible en vrai,
+jamais un fond vide — l'effet livre demandé par Jonathan. Tap et
+swipe-abouti déclenchent la **même** glissade programmatique (durée fixe,
+`Easing.out(Easing.cubic)`), jamais deux langages visuels différents.
+
+⚠️ **Point clé pour la synchronisation : l'état ne change qu'à la fin de la
+glissade**, jamais au relâchement du doigt. `onCommit` n'est appelé que dans
+le callback de fin de `withTiming`, au même moment où `dragX` revient à 0 —
+c'est ce couplage qui permet à l'affiche et au panneau de détails de changer
+exactement au même instant, sans jamais désynchroniser l'un de l'autre.
+
+⚠️ **Le scale de pression vit sur un wrapper à l'EXTÉRIEUR de `PosterShell`**,
+jamais sur un enfant qu'elle clippe : toute la carte arrondie rétrécit comme
+un seul bloc, sans révéler ni fond ni contour carré (piège rencontré à la
+première version, voir ci-dessus).
+
+⚠️ **Un second geste pendant une glissade en cours est ignoré**, pas empilé —
+une valeur partagée `isAnimating` le fait taire dès `onBegin`/`onEnd`, reset
+dans `finishSlide`. Sans ça, un double tap ou un double swipe rapprochés
+pouvaient faire dérailler `dragX` en pleine animation.
 
 ⚠️ **`Gesture.Pan()` est imbriqué dans le `ScrollView` vertical de l'écran** :
 `activeOffsetX`/`failOffsetY` arbitrent avec le défilement de la page comme
@@ -59,9 +89,20 @@ pas à la position de défilement. Revient à 0 par ressort au relâchement, que
 le seuil ait été franchi ou non.
 
 `prefers-reduced-motion` coupe l'aperçu de glissement (`dragX`/`pageFollowX`
-restent à 0) mais **pas** la fonction : swiper au-delà du seuil change
-toujours de diapositive, seule la prévisualisation animée disparaît — même
-convention que le reste du fichier.
+restent à 0, la glissade programmatique devient instantanée) mais **pas** la
+fonction : taper ou swiper change toujours de diapositive, seule
+l'animation disparaît — même convention que le reste du fichier.
+
+## Le panneau de détails ne démonte jamais son ombre portée
+
+`EventDetailPane`/`ArtistDetailPane` séparent la coquille à ombre (`Pane`,
+`shadows.card`) du contenu (`EventDetailContent`/`ArtistDetailContent`,
+remonté par `key={event.id}`/`key={artist.id}` à chaque changement). Tout
+remonter ensemble faisait clignoter l'ombre Android (`elevation`) un instant
+avant le contenu : `elevation` n'est pas porté par l'animation d'opacité de
+`entering`/`exiting` de Reanimated, contrairement au reste de la vue — elle
+« saute » au lieu de suivre le fondu. Garder `Pane` stable et ne remonter que
+le contenu referme le trou.
 
 ## Listes
 

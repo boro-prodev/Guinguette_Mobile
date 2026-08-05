@@ -6,11 +6,14 @@
  *
  * Le thème vient de la soirée liée (`event.theme`) : la fiche artiste porte
  * la couleur de son concert, pas de teinte qui lui serait propre.
+ *
+ * ⚠️ **`Pane` (l'ombre portée) ne se démonte jamais** — même piège et même
+ * correctif qu'`EventDetailPane` : voir sa documentation.
  */
 import { memo, useCallback } from 'react';
 import { Linking } from 'react-native';
-import Animated, { FadeIn, FadeOut, ReduceMotion, useReducedMotion } from 'react-native-reanimated';
-import { Theme, XStack } from 'tamagui';
+import Animated, { FadeIn, ReduceMotion, useReducedMotion } from 'react-native-reanimated';
+import { Theme, XStack, YStack } from 'tamagui';
 
 import { Body, Pane } from '@/components/features/PosterCarousel';
 import { Button } from '@/components/ui/Button';
@@ -20,7 +23,7 @@ import type { GuinguetteEvent } from '@/data/events';
 
 type ArtistDetailPaneProps = { artist: Artist; event: GuinguetteEvent };
 
-function ArtistDetailPaneComponent({ artist, event }: ArtistDetailPaneProps) {
+function ArtistDetailContent({ artist, event }: ArtistDetailPaneProps) {
   const reduceMotion = useReducedMotion();
 
   const openWebsite = useCallback(() => {
@@ -37,11 +40,8 @@ function ArtistDetailPaneComponent({ artist, event }: ArtistDetailPaneProps) {
 
   return (
     <Theme name={event.theme}>
-      <Animated.View
-        entering={reduceMotion ? undefined : FadeIn.duration(220).reduceMotion(ReduceMotion.System)}
-        exiting={reduceMotion ? undefined : FadeOut.duration(140).reduceMotion(ReduceMotion.System)}
-      >
-        <Pane style={shadows.card}>
+      <Animated.View entering={reduceMotion ? undefined : FadeIn.duration(200).reduceMotion(ReduceMotion.System)}>
+        <YStack gap="$sm">
           <Body>{artist.bio}</Body>
 
           <XStack gap="$sm">
@@ -84,9 +84,17 @@ function ArtistDetailPaneComponent({ artist, event }: ArtistDetailPaneProps) {
               <Button.Icon name="facebook" />
             </Button>
           </XStack>
-        </Pane>
+        </YStack>
       </Animated.View>
     </Theme>
+  );
+}
+
+function ArtistDetailPaneComponent({ artist, event }: ArtistDetailPaneProps) {
+  return (
+    <Pane style={shadows.card}>
+      <ArtistDetailContent key={artist.id} artist={artist} event={event} />
+    </Pane>
   );
 }
 

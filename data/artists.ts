@@ -36,8 +36,8 @@ export const artists: Artist[] = [
     name: 'Les Lampions Swing',
     style: 'Jazz manouche',
     bio: 'Trio local formé autour d’une passion commune pour Django Reinhardt. Guitare, contrebasse et violon pour des standards qui donnent envie de danser entre les tables.',
-    image: require('../assets/images/programmation_01.webp'),
-    alt: 'Le trio en concert sous la tente',
+    image: require('../assets/images/jazz-band.webp'),
+    alt: 'Le trio, violon, guitare et contrebasse',
     eventId: 'trio-jazz-manouche',
   },
   {
@@ -45,8 +45,8 @@ export const artists: Artist[] = [
     name: 'L’Orchestre du Viroin',
     style: 'Bal populaire, musette',
     bio: 'Une dizaine de musiciens de la vallée, accordéon en tête, qui font tourner les valses et les javas depuis plus de quinze ans dans les fêtes de village.',
-    image: require('../assets/images/ambiance-soiree.webp'),
-    alt: 'L’orchestre pendant le grand bal',
+    image: require('../assets/images/orchestre-band.webp'),
+    alt: 'L’orchestre, accordéon en tête, entouré de ses musiciens',
     eventId: 'bal-populaire-ete',
   },
   {
@@ -54,8 +54,8 @@ export const artists: Artist[] = [
     name: 'Duo Amandine & Téo',
     style: 'Guitare et voix, acoustique',
     bio: 'Une guitare, deux voix, et un répertoire de chansons françaises et de reprises tout en douceur — le duo qu’on écoute un verre de vin nature à la main.',
-    image: require('../assets/images/programmation_02.webp'),
-    alt: 'Le duo en terrasse, guitare acoustique',
+    image: require('../assets/images/solo-singer.webp'),
+    alt: 'Amandine, du duo Amandine & Téo',
     eventId: 'soiree-guinguette-tapas',
   },
 ];

@@ -88,6 +88,35 @@
 > l'écran pendant le geste — l'effet est le même en haut ou en bas de la page,
 > puisque le `transform` porte sur le conteneur qui enveloppe tout le contenu
 > défilable, pas sur la position de défilement elle-même.
+> **Mise à jour du 5 août 2026 (nuit)** — Jonathan a testé cette première
+> version du geste et remonté trois défauts précis : le panneau de détails
+> changeait de contenu avant que l'affiche ait fini son fondu (jamais
+> synchronisés) ; glisser le doigt révélait le fond blanc de `PosterShell`
+> derrière l'affiche qui suivait le doigt (une seule affiche montée à la
+> fois) ; et le retour tactile au tap (un `scale` posé sur un enfant *clippé*
+> par `PosterShell`) révélait à la fois ce fond blanc et le contour carré, non
+> arrondi, de l'enfant. **`PosterFrame` remplace le crossfade `AnimatePresence`
+> par un vrai carrousel à trois affiches** (précédente / active / suivante),
+> toujours montées côte à côte dans la bande : glisser le doigt fait apparaître
+> la vraie affiche voisine, comme les pages d'un livre — plus jamais de fond
+> vide. Tap et swipe-abouti déclenchent désormais **la même** glissade
+> programmatique (durée fixe, `Easing.out(Easing.cubic)`) : un seul langage
+> visuel, jamais deux. Point clé pour la synchronisation : le changement
+> d'état (`onCommit`) n'arrive **qu'à la fin** de cette glissade, jamais au
+> relâchement du doigt — c'est ce couplage qui aligne exactement l'affiche et
+> le panneau de détails. Le scale de pression est passé sur un wrapper **à
+> l'extérieur** de `PosterShell`, pour que toute la carte arrondie rétrécisse
+> comme un seul bloc au lieu de révéler ses bords. Côté panneau,
+> `EventDetailPane`/`ArtistDetailPane` séparent désormais l'ombre portée
+> (`Pane`, jamais démontée) du contenu (remonté par `key`, lui, à chaque
+> changement) : l'ombre Android (`elevation`) ne suit pas le fondu
+> `entering`/`exiting` de Reanimated et « sautait » sinon avant le contenu.
+> Trois nouvelles photos d'artistes (`assets/images/jazz-band.webp`,
+> `orchestre-band.webp`, `solo-singer.webp`, converties depuis des PNG de 4 Mo
+> fournis par Jonathan) remplacent les images réutilisées des soirées dans
+> `data/artists.ts` — `solo-singer.webp` reste utilisée pour « Duo Amandine &
+> Téo » malgré l'écart visuel avec « duo, guitare » (portrait d'une chanteuse
+> seule), choix confirmé par Jonathan.
 > **Le reste de ce document n'est pas implémenté.** C'est un plan de travail, pas
 > un compte rendu. L'état réel de l'app est décrit dans `CLAUDE.md`.
 

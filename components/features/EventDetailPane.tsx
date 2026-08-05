@@ -10,10 +10,17 @@
  *
  * Le bouton « Participer » SIMULÉ : la participation bascule localement
  * (AsyncStorage `demo:rsvp:*`) et déclenche un toast. Rien n'est envoyé.
+ *
+ * ⚠️ **`Pane` (l'ombre portée) ne se démonte jamais.** Remonter tout le
+ * panneau à chaque changement de soirée faisait clignoter l'ombre Android
+ * (`elevation`) un instant avant le contenu — `elevation` n'est pas porté par
+ * l'animation d'opacité de `entering`/`exiting`, contrairement au reste de la
+ * vue, donc elle « saute » au lieu de suivre le fondu. Seul le contenu
+ * (`EventDetailContent`, ci-dessous) se remonte, `Pane` reste stable.
  */
 import { memo, useCallback } from 'react';
 import { StyleSheet } from 'react-native';
-import Animated, { FadeIn, FadeOut, ReduceMotion, useReducedMotion } from 'react-native-reanimated';
+import Animated, { FadeIn, ReduceMotion, useReducedMotion } from 'react-native-reanimated';
 import { styled, Text, Theme, XStack, YStack } from 'tamagui';
 
 import { Body, Pane } from '@/components/features/PosterCarousel';
@@ -63,7 +70,7 @@ const PriceTag = styled(Text, {
 
 type EventDetailPaneProps = { event: GuinguetteEvent };
 
-function EventDetailPaneComponent({ event }: EventDetailPaneProps) {
+function EventDetailContent({ event }: EventDetailPaneProps) {
   const { enabled, toggle } = useDemoFlag(`rsvp:${event.id}`);
   const { showToast } = useToast();
   const reduceMotion = useReducedMotion();
@@ -79,11 +86,8 @@ function EventDetailPaneComponent({ event }: EventDetailPaneProps) {
     // Le thème de la soirée peint tout le panneau — et bascule au vert dès
     // que la participation est annoncée, comme sur l'ancienne carte.
     <Theme name={enabled ? 'secondary' : event.theme}>
-      <Animated.View
-        entering={reduceMotion ? undefined : FadeIn.duration(220).reduceMotion(ReduceMotion.System)}
-        exiting={reduceMotion ? undefined : FadeOut.duration(140).reduceMotion(ReduceMotion.System)}
-      >
-        <Pane style={shadows.card}>
+      <Animated.View entering={reduceMotion ? undefined : FadeIn.duration(200).reduceMotion(ReduceMotion.System)}>
+        <YStack gap="$sm">
           <XStack alignItems="center" gap="$xs">
             <Icon name="calendar" size={14} color={colors.primary} />
             <Text style={styles.date}>{event.when}</Text>
@@ -108,9 +112,17 @@ function EventDetailPaneComponent({ event }: EventDetailPaneProps) {
             {enabled && <Button.Icon name="check" />}
             <Button.Text>Participer</Button.Text>
           </Button>
-        </Pane>
+        </YStack>
       </Animated.View>
     </Theme>
+  );
+}
+
+function EventDetailPaneComponent({ event }: EventDetailPaneProps) {
+  return (
+    <Pane style={shadows.card}>
+      <EventDetailContent key={event.id} event={event} />
+    </Pane>
   );
 }
 

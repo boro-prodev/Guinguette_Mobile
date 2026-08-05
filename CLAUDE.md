@@ -75,7 +75,7 @@ automatiquement selon l'intention (`.claude/skills/environnement/`).
 | `tamagui.config.ts` | Expose `theme.ts` à Tamagui : tokens, polices, thèmes d'accent, animations |
 | `components/ui/Button.tsx` | **LE bouton de l'app** — un seul objet, décliné par thème |
 | `components/ui/PressableScale.tsx` | Zone tactile brute — **pas** un bouton |
-| `components/features/PosterCarousel.tsx` | Habillage partagé par les deux carrousels de Soirées (styled components) et leur geste commun (`usePosterSwipe` — tap **et** swipe, `react-native-gesture-handler`) |
+| `components/features/PosterCarousel.tsx` | `PosterFrame` — mécanique **et** rendu complets des deux carrousels de Soirées : bande à trois affiches (façon livre), geste tap **et** swipe (`react-native-gesture-handler`), retour tactile |
 | `components/features/EventSpotlight.tsx` / `EventDetailPane.tsx` | « À l'affiche » : une soirée à la fois, **au tap ou au swipe**, panneau **toujours affiché** en dessous — description, programme, jauge, tarif, bouton « Participer » |
 | `components/features/ArtistSpotlight.tsx` / `ArtistDetailPane.tsx` | « Artist Spot » : même mécanique, appliquée aux artistes (`data/artists.ts`) — bio, style musical, liens site/réseaux sociaux. Synchronisé avec « À l'affiche » via un `activeEventId` partagé (`app/(tabs)/soirees.tsx`), qui porte aussi `pageFollowX` (toute la page suit le swipe du carrousel) |
 | `components/features/Countdown.tsx` | Compte à rebours vivant (retick chaque minute, point qui bat) |
