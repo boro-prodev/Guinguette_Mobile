@@ -76,9 +76,9 @@ automatiquement selon l'intention (`.claude/skills/environnement/`).
 | `components/ui/Button.tsx` | **LE bouton de l'app** — un seul objet, décliné par thème |
 | `components/ui/PressableScale.tsx` | Zone tactile brute — **pas** un bouton |
 | `components/layout/SwipeTabs.tsx` | Navigation au doigt entre onglets (+ `useSwipeGuard`) |
-| `components/features/PosterCarousel.tsx` | Mécanique et habillage partagés par les deux carrousels de Soirées (hook `usePosterCarousel`, styled components) |
-| `components/features/EventSpotlight.tsx` / `EventDetailPane.tsx` | « À l'affiche » : une soirée à la fois (swipe + pastilles), panneau **toujours affiché** en dessous — description, programme, jauge, tarif, bouton « Participer » |
-| `components/features/ArtistSpotlight.tsx` / `ArtistDetailPane.tsx` | « Artist Spot » : même carrousel, appliqué aux artistes (`data/artists.ts`) — bio, style musical, liens site/réseaux sociaux |
+| `components/features/PosterCarousel.tsx` | Habillage partagé par les deux carrousels de Soirées (styled components) |
+| `components/features/EventSpotlight.tsx` / `EventDetailPane.tsx` | « À l'affiche » : une soirée à la fois, **au tap** (pastilles pour un saut direct), panneau **toujours affiché** en dessous — description, programme, jauge, tarif, bouton « Participer » |
+| `components/features/ArtistSpotlight.tsx` / `ArtistDetailPane.tsx` | « Artist Spot » : même mécanique, appliquée aux artistes (`data/artists.ts`) — bio, style musical, liens site/réseaux sociaux. Synchronisé avec « À l'affiche » via un `activeEventId` partagé (`app/(tabs)/soirees.tsx`) |
 | `components/features/Countdown.tsx` | Compte à rebours vivant (retick chaque minute, point qui bat) |
 | `components/features/SeatsGauge.tsx` | Jauge de places, pousse depuis la gauche à l'apparition |
 | `features/reserve/` | Parcours de réservation simulé (bottom sheet 3 étapes) |

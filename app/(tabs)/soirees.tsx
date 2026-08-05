@@ -1,8 +1,12 @@
 /**
  * Soirées & Bal — deux carrousels : « À l'affiche » (toute la programmation)
  * et « Artist Spot » (les artistes déjà venus ou à venir, `data/artists.ts`).
- * Même mécanique d'interaction pour les deux (voir `PosterCarousel.tsx`).
+ *
+ * Les deux partagent un seul état, `activeEventId` : taper l'affiche de
+ * l'une avance la même soirée que l'autre suit — c'est cet id qui les
+ * synchronise, `Artist.eventId` faisant le lien entre les deux tableaux.
  */
+import { useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { ArtistSpotlight } from '@/components/features/ArtistSpotlight';
@@ -14,6 +18,8 @@ import { events } from '@/data/events';
 import { NBSP } from '@/utils/text';
 
 export default function SoireesScreen() {
+  const [activeEventId, setActiveEventId] = useState(events[0]?.id ?? '');
+
   return (
     <ScrollView
       contentContainerStyle={styles.list}
@@ -34,11 +40,21 @@ export default function SoireesScreen() {
       </View>
 
       <Reveal delay={300} fadeOnly style={styles.spotlight}>
-        <EventSpotlight kicker="À l’affiche" events={events} />
+        <EventSpotlight
+          kicker="À l’affiche"
+          events={events}
+          activeId={activeEventId}
+          onChangeActive={setActiveEventId}
+        />
       </Reveal>
 
       <Reveal delay={400} fadeOnly style={styles.spotlight}>
-        <ArtistSpotlight kicker="Artist Spot" artists={artists} />
+        <ArtistSpotlight
+          kicker="Artist Spot"
+          artists={artists}
+          activeEventId={activeEventId}
+          onChangeActive={setActiveEventId}
+        />
       </Reveal>
     </ScrollView>
   );

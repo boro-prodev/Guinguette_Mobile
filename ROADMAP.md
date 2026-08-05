@@ -58,6 +58,17 @@
 > donc `ArtistSpotlight` ne l'affiche que pour une soirée à venir.
 > `GuinguetteEvent.pepite` et `.artistUrl` ont disparu, remplacés par
 > `Artist`. Détail du chantier 2, plus bas, mis à jour en conséquence.
+> **Mise à jour du 5 août 2026** — Après avoir testé « À l'affiche » et
+> « Artist Spot » quelques jours, Jonathan est revenu sur le swipe : trop
+> proche du geste de navigation entre onglets, source de confusion. Les deux
+> carrousels naviguent de nouveau **au tap** (fondu + scale via
+> `AnimatePresence`, sans glissement latéral pour ne pas rappeler un swipe),
+> comme avant le chantier 2 — mais avec une nouveauté qui n'existait pas
+> alors : **les deux sections restent synchronisées**, portées par un seul
+> `activeEventId` levé dans `soirees.tsx` (`Artist.eventId` sert de clé
+> commune). Toute la mécanique `ScrollView`/`useSwipeGuard`/RNGH documentée au
+> chantier 2 pour ces deux carrousels a disparu avec elle — `useSwipeGuard()`
+> reste utile ailleurs (la rangée de filtres de La Carte), mais plus ici.
 > **Le reste de ce document n'est pas implémenté.** C'est un plan de travail, pas
 > un compte rendu. L'état réel de l'app est décrit dans `CLAUDE.md`.
 

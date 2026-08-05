@@ -1,85 +1,25 @@
 /**
- * Ce que « À l'affiche » et « Artist Spot » partagent : un carrousel plein
- * écran (une affiche à la fois, swipée ou sautée par pastille) et la coquille
- * visuelle du panneau toujours affiché en dessous. Le contenu de l'affiche et
- * du panneau reste propre à chaque écran (`EventSpotlight`/`EventDetailPane`
- * vs `ArtistSpotlight`/`ArtistDetailPane`) — ce fichier ne porte que la
- * mécanique et l'habillage communs.
+ * Ce que « À l'affiche » et « Artist Spot » partagent : la coquille visuelle
+ * du carrousel (une affiche à la fois, animée par `AnimatePresence` dans
+ * chaque écran) et du panneau toujours affiché en dessous. Le contenu de
+ * l'affiche et du panneau reste propre à chaque écran
+ * (`EventSpotlight`/`EventDetailPane` vs `ArtistSpotlight`/
+ * `ArtistDetailPane`) — ce fichier ne porte que l'habillage commun.
  *
- * `usePosterCarousel` centralise l'état du carrousel : index actif, largeur
- * mesurée, garde-fou de swipe. Voir `useSwipeGuard()` — sans lui, swiper dans
- * le carrousel changerait aussi d'onglet, puisque l'écran entier y est
- * sensible.
- *
- * ⚠️ Le `ScrollView` vient de `react-native-gesture-handler`, pas de
- * `react-native` : imbriqué dans le `ScrollView` vertical de l'écran, le
- * `ScrollView` natif de React Native se fait parfois voler son geste par le
- * swipe d'onglets — silencieusement, sans erreur. Rencontré au chantier 2,
- * ce module porte le contournement pour les deux carrousels de l'écran.
+ * ⚠️ Pas de `ScrollView` ici : les deux carrousels naviguent au **tap**, pas
+ * au swipe (revu après le chantier 2 — swiper une affiche entrait en
+ * conflit avec le swipe de navigation entre onglets, trop de gestes
+ * proches). `useSwipeGuard()` reste utile ailleurs dans l'app (la rangée de
+ * filtres de La Carte), mais plus ici.
  */
-import { useCallback, useRef, useState } from 'react';
-import {
-  StyleSheet,
-  useWindowDimensions,
-  type LayoutChangeEvent,
-  type NativeScrollEvent,
-  type NativeSyntheticEvent,
-} from 'react-native';
-import { ScrollView } from 'react-native-gesture-handler';
-import { useReducedMotion } from 'react-native-reanimated';
+import { StyleSheet } from 'react-native';
 import { styled, Text, View } from 'tamagui';
 
-import { useSwipeGuard } from '@/components/layout/SwipeTabs';
 import { fonts } from '@/constants/theme';
 
 /** Hauteur de l'affiche — assez haute pour respirer, assez basse pour laisser
  *  deviner le panneau en dessous. */
 export const POSTER_HEIGHT = 300;
-
-export function usePosterCarousel<T>(items: T[]) {
-  const { width: windowWidth } = useWindowDimensions();
-  const [containerWidth, setContainerWidth] = useState(windowWidth);
-  const [index, setIndex] = useState(0);
-  const scrollRef = useRef<ScrollView>(null);
-  const reduceMotion = useReducedMotion();
-  const swipeGuard = useSwipeGuard();
-
-  const active = items[index];
-
-  /** Saut direct depuis une pastille. */
-  const goTo = useCallback(
-    (position: number) => {
-      setIndex(position);
-      scrollRef.current?.scrollTo({ x: position * containerWidth, animated: !reduceMotion });
-    },
-    [containerWidth, reduceMotion]
-  );
-
-  const handleMomentumEnd = useCallback(
-    (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-      if (!containerWidth) return;
-      const position = Math.round(event.nativeEvent.contentOffset.x / containerWidth);
-      setIndex(position);
-    },
-    [containerWidth]
-  );
-
-  const onLayout = useCallback((event: LayoutChangeEvent) => {
-    setContainerWidth(event.nativeEvent.layout.width);
-  }, []);
-
-  return {
-    index,
-    active,
-    containerWidth,
-    scrollRef,
-    swipeGuard,
-    reduceMotion,
-    onLayout,
-    handleMomentumEnd,
-    goTo,
-  };
-}
 
 export const Kicker = styled(Text, {
   name: 'SpotlightKicker',
@@ -93,6 +33,7 @@ export const Kicker = styled(Text, {
 
 export const PosterShell = styled(View, {
   name: 'PosterShell',
+  width: '100%',
   height: POSTER_HEIGHT,
   borderRadius: '$md',
   overflow: 'hidden',
@@ -178,5 +119,3 @@ export const tagLabelStyle = StyleSheet.create({
     textTransform: 'uppercase',
   },
 }).tagLabel;
-
-export { ScrollView };

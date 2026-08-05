@@ -40,11 +40,17 @@ auprès du même arbitrage tactile que `SwipeTabsArea` et referme le trou. La
 rangée de filtres de La Carte n'a jamais eu ce problème : elle est imbriquée
 dans une `FlatList`, pas un `ScrollView`.
 
-Ce `ScrollView` (et le reste de la mécanique de carrousel — index actif,
-garde-fou, pastilles) vit désormais dans `components/features/
-PosterCarousel.tsx`, partagé par les deux carrousels de l'écran Soirées
-(« À l'affiche », « Artist Spot ») : le contournement n'est à connaître
-qu'une fois, pas à redécouvrir à chaque nouveau carrousel.
+⚠️ **Ce contournement ne concerne plus les carrousels de l'écran Soirées.**
+Après l'avoir vécu à l'écran, Jonathan a jugé le swipe dans une affiche trop
+proche du swipe de navigation entre onglets — trop de gestes similaires, trop
+de confusion. « À l'affiche » et « Artist Spot » naviguent désormais **au
+tap** (`AnimatePresence`, fondu + scale, jamais de glissement latéral — ça
+ressemblerait justement au geste retiré), synchronisés entre eux par un seul
+`activeEventId` porté par `soirees.tsx`. Plus de `ScrollView`, plus de
+`useSwipeGuard()`, plus de piège RNGH à ce sujet dans
+`components/features/PosterCarousel.tsx` : cette règle reste vraie pour tout
+**futur** défilement horizontal (la rangée de filtres de La Carte, par
+exemple), mais plus pour ces deux-là.
 
 ## Listes
 
