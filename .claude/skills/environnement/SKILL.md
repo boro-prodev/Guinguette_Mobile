@@ -15,10 +15,20 @@ AVD utilisé : `Guinguette_API36` (Android 36, Play Store), avec Expo Go
 `%LOCALAPPDATA%\Android\Sdk` ; `adb` et `emulator` ne sont pas dans le `PATH` par
 défaut, il faut les y ajouter pour la session.
 
+⚠️ **Toujours commencer par regarder ce qui tourne déjà.** Relancer par-dessus
+l'existant est la première source de perte de temps ici : un second émulateur
+se heurte au verrou de l'AVD, et un Metro déjà en place sert **son** cache,
+pas forcément celui du projet en cours ni celui d'après tes modifications.
+C'est l'étape 0, jamais facultative.
+
 ```bash
 export PATH="$PATH:$LOCALAPPDATA/Android/Sdk/emulator:$LOCALAPPDATA/Android/Sdk/platform-tools"
 
-# 1. Émulateur (en tâche de fond)
+# 0. L'existant — AVANT de lancer quoi que ce soit
+adb devices                              # une ligne « emulator-5554 device » = déjà lancé
+curl -s -m 3 http://localhost:8081/status   # « packager-status:running » = Metro déjà lancé
+
+# 1. Émulateur — seulement s'il n'y en a pas déjà un
 emulator -avd Guinguette_API36 -gpu swiftshader_indirect -no-boot-anim
 
 # 2. Attendre le boot complet
@@ -34,13 +44,31 @@ adb reverse tcp:8081 tcp:8081
 adb shell am start -a android.intent.action.VIEW -d "exp://127.0.0.1:8081"
 ```
 
+**Que faire de ce qu'on trouve à l'étape 0 :**
+
+| Trouvé | À faire |
+|---|---|
+| Un émulateur déjà lancé | **Le garder** : sauter l'étape 1. Vérifier quand même qu'il répond (`dumpsys window` doit donner un `mCurrentFocus` non nul, voir plus bas). |
+| Un Metro déjà lancé | **Ne pas lui faire confiance** : on ignore de quel dossier il a démarré ni avec quel cache. Le tuer (`netstat -ano \| grep :8081` pour le PID, puis `taskkill //PID <pid> //T //F`) et repartir sur `npx expo start --clear`. |
+| Rien | Dérouler les étapes 1 à 4. |
+
 Contrôle visuel sans regarder la fenêtre : `adb exec-out screencap -p > shot.png`.
 Au tout premier lancement, Expo Go superpose son menu développeur à l'app — le
 fermer avec `adb shell input keyevent 4`.
 
-Si l'écran est noir et que `dumpsys window` renvoie `mCurrentFocus=null`,
-l'appareil dort : `adb shell input keyevent KEYCODE_WAKEUP`. Ne pas envoyer
-`KEYCODE_MENU`, qui ouvre le menu développeur d'Expo Go.
+Si l'écran est noir et que `dumpsys window` renvoie `mCurrentFocus=null`, il y a
+**deux causes bien distinctes**, à départager avec
+`adb shell dumpsys power | grep mWakefulness` :
+
+- `mWakefulness=Asleep` — l'appareil dort : `adb shell input keyevent KEYCODE_WAKEUP`.
+  Ne pas envoyer `KEYCODE_MENU`, qui ouvre le menu développeur d'Expo Go.
+- `mWakefulness=Awake` **et pourtant** un focus qui reste `null` — la restauration
+  d'instantané a mal tourné. Signe distinctif dans le log de l'émulateur :
+  `Loading snapshot 'default_boot'` suivi d'un `adb ... failed: 'device offline'`.
+  `KEYCODE_WAKEUP` n'y peut rien, et attendre non plus : l'écran reste noir
+  indéfiniment, `mFocusedApp` désigne bien une activité mais aucune fenêtre ne
+  prend le focus. **Redémarrer à froid** — `adb emu kill`, puis relancer avec
+  `-no-snapshot-load`. Constaté le 5 août 2026, réglé du premier coup.
 
 Pour arrêter proprement : `adb emu kill` (l'arrêt est asynchrone, revérifier avec
 `adb devices`), puis `adb kill-server`.
