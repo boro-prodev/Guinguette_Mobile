@@ -117,6 +117,19 @@
 > `data/artists.ts` — `solo-singer.webp` reste utilisée pour « Duo Amandine &
 > Téo » malgré l'écart visuel avec « duo, guitare » (portrait d'une chanteuse
 > seule), choix confirmé par Jonathan.
+> **Mise à jour du 5 août 2026 (fin de journée)** — Deux correctifs sur le
+> carrousel, puis **le chantier 3 est fait**. Côté Soirées : les affiches sont
+> désormais identifiées par la **clé de leur élément** et non par leur place,
+> sans quoi chaque changement remplaçait la `source` d'une `<Image>` déjà montée
+> et expo-image repartait d'un fondu à vide (affiche sans photo) ; et
+> l'annulation du décalage de bande (`shift`) est passée d'un worklet à un
+> **style React Native ordinaire**, sans quoi elle arrivait une image après la
+> réattribution des positions et laissait voir l'affiche *d'après* (« image 1,
+> image 3, image 2 »). Côté accueil, un avertissement au démarrage a révélé que
+> le flou du `tone="glass"` était **purement désactivé sur Android** depuis le
+> début : `dimezisBlurView` exige un `BlurTargetView` désigné (prop
+> `blurTarget`), faute de quoi expo-blur retombe sur un simple voile. Corrigé,
+> vérifié à l'écran. Le chantier 3 est détaillé plus bas, dans son **Résultat**.
 > **Le reste de ce document n'est pas implémenté.** C'est un plan de travail, pas
 > un compte rendu. L'état réel de l'app est décrit dans `CLAUDE.md`.
 
@@ -147,13 +160,13 @@ ne soit pas reposée trois semaines plus tard.
 | **1d.c** | Accueil — débit de la vidéo | 4 août 2026 | Ré-encodée à 768×576, ~1290 kbit/s : 2,45 Mo → 782 Kio (÷3,1). Qualité vérifiée à l'écran, aucune perte perceptible derrière le voile. |
 | **1c** | Accueil — hiérarchie des deux boutons | 4 août 2026 | Verre (`tone="glass"`) + anneau ambré permanent qui bat (`emphasis`) sur le bouton principal. Deux ajouts à `Button.tsx` non prévus par ce document — voir le chantier pour le détail et le piège Reanimated rencontré. |
 | **2** | Soirées — les pépites | 4 août 2026 (nuit) | Carrousel swipé (`useSwipeGuard()` + `ScrollView` de `react-native-gesture-handler`) ; panneau toujours affiché (le tap-pour-déplier initial a été abandonné le soir même). « Les pépites » a ensuite été remplacé par « Artist Spot » (`data/artists.ts`) — voir la mise à jour du 4 août (nuit, suite) en tête de document. |
+| **3** | La Carte — fiches repliées | 5 août 2026 | Le « motif validé en 2 » que ce document proposait de réutiliser **n'existait plus** : le tap-pour-déplier de Soirées avait été abandonné le soir même de son écriture. Le signal de dépliage a donc été inventé, pas repris — voir le Résultat. |
 
 ## Ordre conseillé — ce qui reste
 
 | # | Chantier | État | Pourquoi à ce moment-là |
 |---|---|---|---|
-| **3** | La Carte — fiches repliées | ✅ **prêt** | Réutilise le motif validé en 2. Beaucoup moins risqué une fois 2 fait. |
-| **4** | Mouvement — pression du bouton, ouverture de la feuille | ✅ **prêt** | Ajouté le 3 août 2026. Indépendant des autres, mais **transverse** : touche LE bouton et la feuille, donc tous les écrans. À faire quand le reste est stable. |
+| **4** | Mouvement — pression du bouton, ouverture de la feuille | ✅ **prêt** | Ajouté le 3 août 2026. Indépendant des autres, mais **transverse** : touche LE bouton et la feuille, donc tous les écrans. À faire quand le reste est stable. **C'est aussi là que se traite la question de performance** ouverte le 5 août (voir la question 8). |
 
 ---
 
@@ -657,7 +670,55 @@ envoyée » : on n'envoie rien, on ouvre un lien.
 
 ---
 
-# Chantier 3 — La Carte : fiches repliées ✅ prêt
+# Chantier 3 — La Carte : fiches repliées ✅ fait le 5 août 2026
+
+## Résultat
+
+Les trois points décidés sont en place. Ce qu'il faut retenir :
+
+**1. Le « signal élégant » a dû être inventé.** Ce document proposait de
+réutiliser « le chevron du chantier 2 » — mais ce chevron n'existait plus au
+moment d'écrire : le tap-pour-déplier de Soirées a été abandonné le soir même de
+sa mise en place, au profit d'un panneau toujours ouvert. Retenu : une
+**pastille ronde posée en bas à droite de la photo**, dont le chevron pivote de
+180° à l'ouverture. Ce coin-là est le seul libre — le badge « Suggestion de
+saison » occupe le haut à droite d'un plat vedette, et le prix tient la ligne du
+titre.
+
+**2. Le sous-titre a été raccourci deux fois, sur mesure.** L'accroche proposée
+(« Découvrez les produits locaux à travers des plats gourmands et élégants »)
+passait à 3 lignes sur 360 dp. La raccourcir en gardant « et élégants » tenait
+en 2 lignes — mais laissait **« élégants » seul sur la seconde**, très
+exactement le défaut qu'on voulait corriger. Retenu : **« Produits locaux, plats
+gourmands »**, qui tient sur une ligne à 360 comme à 412 dp. C'est l'issue n° 1
+proposée ici (« raccourcir la phrase »), poussée un cran plus loin.
+
+**3. Le bouton flottant n'avait pas besoin d'éviter la barre d'onglets.** Ce
+document le craignait ; c'est faux, et c'est mesuré : la barre n'est pas en
+position absolue, donc le bas de l'écran **est** son bord supérieur. Lui ajouter
+`TAB_BAR_HEIGHT` + safe-area l'aurait décollé pour rien. En revanche il faut le
+poser **bas** : à `spacing.lg` il tombait en pleine ligne de titre et masquait
+le nom du plat ; il est à `spacing.md`, où il ne croise plus qu'une bande de
+photo. Les prix, eux, restent lisibles à toute position — ils sont alignés à
+droite, au-delà de la pilule.
+
+⚠️ **Piège Android rencontré** : l'ombre (`shadows.card` = `elevation: 3`) était
+d'abord posée sur le conteneur pleine largeur du bouton. Android ne connaît que
+`elevation` et dessine d'après **l'outline de la vue** : avec `radius.pill`, ça
+donnait une pilule aussi large que l'écran, visible comme une bande grise. Elle
+vit maintenant sur un conteneur qui se réduit à la taille du bouton.
+
+**Ce que ça a touché :** `components/features/MenuBlockView.tsx` (nouveau
+`DishCard`, à part pour que les intertitres et les listes de prix ne montent pas
+de hooks pour rien), `app/(tabs)/carte.tsx` (sous-titre, bouton flottant,
+`Animated.FlatList` + `useAnimatedScrollHandler`), `.claude/rules/ecrans.md`.
+`data/menu.ts` n'a pas bougé, comme prévu.
+
+**Non fait, volontairement** : l'ouverture ne fait que **fondre** la description
+(la hauteur, elle, saute). Une `LinearTransition` lisserait le changement, mais
+les animations de layout sur une `FlatList` sont un nid à saccades et la
+question des performances était ouverte le jour même. À rouvrir au chantier 4 si
+Jonathan le juge trop sec.
 
 ## Intention
 
@@ -715,11 +776,14 @@ réutilisée partout.
   déplace un prix, **le faire passer par `eur()`**, jamais reformer « 14€ » à la
   main.
 
-## Encore ouvert
+## ~~Encore ouvert~~ — tranché le 5 août 2026
 
-- **À quoi ressemble le « signal élégant » de dépliage ?** Le chevron du
+- ~~**À quoi ressemble le « signal élégant » de dépliage ?** Le chevron du
   chantier 2 est cohérent mais discret. Un dégradé de texte tronqué, une ombre
-  portée, un « + » ? À arbitrer visuellement, une fois le chantier 2 en place.
+  portée, un « + » ?~~ **Tranché : une pastille ronde en bas à droite de la
+  photo, chevron qui pivote de 180° à l'ouverture.** La prémisse de la question
+  était caduque — il n'y avait plus de chevron au chantier 2 à reprendre. Reste
+  à faire valider **visuellement par Jonathan**, qui n'a pas encore vu l'écran.
 
 ---
 
@@ -834,12 +898,13 @@ se voit plus en release.
 | ~~1~~ | ~~Réaligner les polices avec `../Guinguette_Web` ?~~ **Question caduque** : la prémisse était fausse (les deux design systems étaient alignés) et la divergence est maintenant assumée. Reste un nettoyage à faire côté site. | — | Réglé le 3 août 2026 |
 | ~~2~~ | ~~Répartition du contenu entre « À l'affiche » et « Les pépites » ?~~ **Tranché autrement que la proposition par défaut : « À l'affiche » garde toute la programmation ; « Les pépites » est une sélection manuelle de l'exploitant** (`pepite: boolean`). | — | Réglé le 4 août 2026 |
 | 3 | Liens artistes : URL réelles ou placeholders ? | — | Oui — `artistUrl` reste vide, pastille désactivée en attendant |
-| 4 | Forme exacte du signal de dépliage sur La Carte | Chantier 3 | Oui — s'arbitre en voyant le chantier 2 |
+| ~~4~~ | ~~Forme exacte du signal de dépliage sur La Carte~~ **Tranché : une pastille ronde en bas à droite de la photo, chevron qui pivote.** La question supposait qu'on reprendrait le chevron du chantier 2 — il n'existait plus. **Reste à valider à l'œil.** | — | Réglé le 5 août 2026 |
 | ~~5~~ | ~~Deux boutons de même rang sur l'accueil, un second rétrogradé, ou un seul ?~~ **Tranché : les deux en verre (`tone="glass"`), le principal distingué par un anneau ambré qui bat (`emphasis`)**, pas par une couleur pleine. | — | Réglé le 4 août 2026 |
 | ~~6~~ | ~~La nouvelle accroche de Soirées tient-elle en 1–2 lignes ?~~ **Mesuré : oui, 2 lignes** sur 360 comme sur 412. Elle reste centrée. | — | Réglé le 3 août 2026 |
 | 7 | **Garde-t-on le halo du bouton ?** C'est la signature « ampoule », mais c'est aussi ce qui coûte un montage par appui | Chantier 4 | Oui — se tranche en le voyant allégé |
-| 8 | **Le « freeze » survit-il à un build de production ?** À mesurer au moniteur de performance avant d'optimiser | Chantier 4 | Non — c'est la première étape du chantier |
-| 9 | **L'accroche de La Carte passe à 3 lignes sur 360 px.** Raccourcir, aligner à gauche, ou assumer ? | Chantier 3 | Oui — à l'écriture de la copie |
+| 8 | **Le « freeze » survit-il à un build de production ?** À mesurer au moniteur de performance avant d'optimiser. **Première mesure, 5 août 2026** (`dumpsys gfxinfo`, émulateur) : 96,4 % d'images saccadées, 50ᵉ centile à 129 ms, **centile GPU à 4950 ms** — l'AVD tourne en rendu logiciel (`swiftshader`, imposé par le driver du poste), donc ces chiffres ne disent **rien** de l'app. À refaire sur téléphone réel, c'est le seul verdict qui vaudra. | Chantier 4 | Non — c'est la première étape du chantier |
+| ~~9~~ | ~~**L'accroche de La Carte passe à 3 lignes sur 360 px.** Raccourcir, aligner à gauche, ou assumer ?~~ **Tranché : raccourcie deux fois** — « Produits locaux, plats gourmands », une seule ligne à 360 comme à 412. Garder « et élégants » tenait en 2 lignes mais laissait « élégants » orphelin. | — | Réglé le 5 août 2026 |
+| 11 | **Coupe-t-on les décorations de l'accueil ?** Rien ne fuit (tous les timers sont nettoyés), mais l'accueil n'est jamais démonté : l'anneau `emphasis`, les 4 ampoules de la guirlande et le battement du `Countdown` tournent en boucle **même quand on est sur un autre onglet**. Les figer (`useIsFocused`) ne changerait rien à l'image. Demandé puis suspendu par Jonathan le 5 août, faute d'avoir tranché entre « c'est plus fluide ? » et « c'est plus beau ? ». | Chantier 4 | Oui — dépend de la mesure sur téléphone (question 8) |
 | 10 | **Voile global à 0,32, ou écran local derrière le seul bloc de texte ?** Le second garde la vidéo vive en haut et en bas | Chantier 1d | Oui — se juge à l'écran |
 
 ---

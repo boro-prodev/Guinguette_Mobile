@@ -136,6 +136,52 @@ avant le contenu : `elevation` n'est pas porté par l'animation d'opacité de
 « saute » au lieu de suivre le fondu. Garder `Pane` stable et ne remonter que
 le contenu referme le trou.
 
+## La Carte : seuls les plats illustrés se replient
+
+`MenuBlockView` rend quatre formes de blocs ; **deux seulement se replient**,
+`feature` et `photo`. Repliés, ils montrent image, titre et prix ; la
+description n'apparaît qu'au toucher. Les listes de prix (`list`) et les
+intertitres (`heading`) ne bougent pas — déjà compacts, et sans image à mettre
+en avant.
+
+- **Le signal de dépliage est une pastille ronde en bas à droite de la photo**,
+  chevron pivotant de 180° à l'ouverture. C'est le seul coin libre : le badge
+  « Suggestion de saison » tient le haut à droite d'un plat vedette, le prix
+  tient la ligne du titre. Ne pas le déplacer dans cette ligne — il s'y lirait
+  comme appartenant au prix.
+- **La carte repliable est un `PressableScale`, pas un `Button`.** Elle n'est
+  pas une action étiquetée ; c'est la zone tactile brute du projet. Elle porte
+  `accessibilityState={{ expanded }}` et un `accessibilityHint` qui change avec
+  l'état.
+- **`DishCard` est un composant à part**, et pas une branche de
+  `MenuBlockView` : il porte des hooks, et les intertitres comme les listes de
+  prix n'ont ainsi rien à monter pour rien.
+- L'ouverture **fond** la description ; la hauteur, elle, saute. Choix assumé —
+  une `LinearTransition` lisserait le mouvement mais les animations de layout
+  dans une `FlatList` sont un nid à saccades.
+
+## Le bouton flottant de La Carte
+
+Absent en haut de page, il se pose au défilement (`SHOW_AT`) et s'efface quand
+on remonte. Trois choses à ne pas défaire :
+
+- **La bascule ne traverse vers React qu'aux changements d'état**, pas à chaque
+  image : le suivi vit dans un `useAnimatedScrollHandler` (thread UI) et ne
+  passe par `runOnJS` que lorsque le seuil est franchi. Sans ce garde, un simple
+  défilement inonderait le thread JS.
+- **Invisible veut dire inatteignable** — `pointerEvents` *et*
+  `accessibilityElementsHidden`, même règle que les deux appels à l'action de
+  l'accueil.
+- ⚠️ **La barre d'onglets n'est pas en position absolue** : le bas de l'écran
+  **est** son bord supérieur. Ne pas ajouter `TAB_BAR_HEIGHT` ni la safe-area,
+  ce serait décoller le bouton pour rien (mesuré le 5 août 2026). Le poser
+  **bas** (`spacing.md`) : plus haut, il tombe en pleine ligne de titre et
+  masque le nom du plat.
+- ⚠️ **L'ombre se pose sur un conteneur à la taille du bouton**, jamais sur son
+  parent pleine largeur : Android ne connaît que `elevation` et dessine d'après
+  l'outline de la vue — avec `radius.pill`, un parent pleine largeur donne une
+  pilule aussi large que l'écran, visible comme une bande grise.
+
 ## Listes
 
 Les listes passent par **`FlatList`** (jamais `ScrollView`) et leurs éléments
