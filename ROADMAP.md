@@ -791,6 +791,12 @@ réutilisée partout.
 
 ## Résultat partiel — 5 août 2026
 
+> Deux correctifs **structurels** sont faits ; tout ce qui touche au **ressenti**
+> attend l'œil de Jonathan (question 7) et une mesure sur téléphone réel
+> (question 8). La ligne de partage est celle que ce document trace lui-même :
+> un défaut de conception se corrige sans mesure, un réglage ne se tranche pas
+> sans regard.
+
 **Fait : le défaut de conception du halo.** Ce document le distingue lui-même du
 reste (« le montage d'un composant par appui reste un défaut de conception
 indépendamment du mode de build : il vaut la peine d'être corrigé même s'il ne
@@ -814,16 +820,40 @@ de 560 ms n'est pas saisissable par `screencap` sur cet émulateur (près d'une
 seconde par capture). À regarder à l'œil — ce que la question 7 demande de toute
 façon.
 
+**Fait aussi : l'alignement de l'ouverture de la feuille.** Le point 2 du
+diagnostic n'est pas une optimisation mais un **défaut de synchronisation**, qui
+ne dépend donc d'aucune mesure. L'intention était déjà bonne dans le code (un
+commentaire disait « ne pas lancer le timing dès `open()` »), mais elle
+s'arrêtait à mi-chemin : le `useEffect` sur `mounted` se déclenche au **commit
+React**, alors que `<Modal>` crée une fenêtre native une à deux trames plus
+tard. Le glissement commençait donc avant que la fenêtre soit à l'écran, et on
+en perdait le début. Il part maintenant de **`<Modal onShow>`**.
+
+Un **filet de sécurité** l'accompagne (`SHOW_FALLBACK_MS`, 250 ms) : une feuille
+montée qui resterait hors écran serait une impasse totale — plus rien à toucher,
+et le fond déjà assombri. Même discipline que l'ouverture de l'accueil, où trois
+sorties garantissent que les boutons finissent toujours par apparaître.
+Ouverture, fermeture et réouverture vérifiées à l'écran.
+
+⚠️ **Le point 4 du diagnostic est faux, et il faut le savoir avant d'y revenir.**
+Ce document soupçonnait « sept `setState` sur le chemin critique de
+l'ouverture ». Vérifié : les sept, plus `setMounted`, sont dans le même bloc
+synchrone — React 18 les regroupe en **un seul rendu**, pas huit. Déplacer
+`reset()` à la fermeture n'économiserait rien et ouvrirait un vrai risque :
+rouvrir avant la fin de l'animation de fermeture montrerait l'état précédent.
+`reset()` reste donc à l'ouverture.
+
 **Pas fait, volontairement :**
 
 - **tous les réglages de ressenti** — `quick` au lieu de `bouncy`, amplitude
   0,97, durée de la feuille à 300 ms. Ce sont des arbitrages visuels
   (question 7), pas des correctifs : ils demandent l'œil de Jonathan, et LE
   bouton de l'app n'est pas l'endroit où trancher du goût tout seul.
-- **l'ouverture de la feuille** (`onShow`, contenu différé, `reset()` hors du
-  chemin critique). Contrairement au halo, ce document ne leur accorde aucune
-  dispense de mesure — et la mesure du 5 août ne vaut rien, l'émulateur tournant
-  en rendu logiciel (question 8). À reprendre après un essai sur téléphone réel.
+- **différer le contenu lourd de la feuille.** Seul point du diagnostic qui
+  reste, et le seul qui soit vraiment une optimisation : monter les puces après
+  coup se **voit** (une feuille vide qui se remplit), donc ça ne se tranche pas
+  sans mesure ni sans regard. La mesure du 5 août ne vaut rien, l'émulateur
+  tournant en rendu logiciel (question 8) : à reprendre sur téléphone réel.
 
 ## Intention
 

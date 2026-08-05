@@ -50,6 +50,12 @@ import { MAX_GUESTS, RESERVATION_TIMES, venue } from '@/data/venue';
 import { addDays, formatLongDate, formatShortDate } from '@/utils/date';
 
 const TIMING = { duration: 400, easing: Easing.bezier(0.22, 1, 0.36, 1) };
+/**
+ * Délai au-delà duquel on fait monter la feuille même sans `onShow`. Assez long
+ * pour que la présentation native ait toujours eu lieu (une à deux trames),
+ * assez court pour qu'un `onShow` manquant ne se voie pas comme un blocage.
+ */
+const SHOW_FALLBACK_MS = 250;
 /** Distance de glissement au-delà de laquelle la feuille se referme. */
 const DISMISS_THRESHOLD = 90;
 const DAYS_AHEAD = 8;
@@ -94,6 +100,10 @@ export function ReserveProvider({ children }: PropsWithChildren) {
   const days = useRef(buildDays()).current;
   const selectedDay = days.find((day) => day.id === dayId) ?? null;
 
+  /** Vrai dès que la glissade d'ouverture est lancée — voir `slideIn`. */
+  const slideStarted = useRef(false);
+  const showFallback = useRef<ReturnType<typeof setTimeout>>(undefined);
+
   const reset = useCallback(() => {
     setStep(1);
     setDayId(null);
@@ -104,18 +114,56 @@ export function ReserveProvider({ children }: PropsWithChildren) {
     setError('');
   }, []);
 
+  /**
+   * ⚠️ `reset()` reste ICI, sur le chemin d'ouverture, contrairement à ce que
+   * suggérait la feuille de route (« sept `setState` sur le chemin critique »).
+   * Vérifié : les sept, plus `setMounted`, sont dans le même bloc synchrone —
+   * React 18 les regroupe donc en **un seul rendu**, pas huit. Les déplacer à
+   * la fermeture n'économiserait rien et ouvrirait un vrai risque : rouvrir
+   * avant la fin de l'animation de fermeture montrerait l'état précédent.
+   */
   const open = useCallback(() => {
     reset();
     translateY.value = height;
+    slideStarted.current = false;
     setMounted(true);
   }, [height, reset, translateY]);
 
-  // L'ouverture démarre une fois la Modal montée : lancer le timing dès `open()`
-  // le ferait courir pendant que la feuille n'est pas encore à l'écran.
+  /**
+   * Fait monter la feuille. Appelée par `<Modal onShow>` — c'est-à-dire quand
+   * la **fenêtre native est réellement présentée**, et non quand React a fini
+   * son commit.
+   *
+   * La version précédente partait d'un `useEffect` sur `mounted`. L'intention
+   * était déjà la bonne (« ne pas lancer le timing dès `open()` »), mais elle
+   * s'arrêtait à mi-chemin : sur Android, `<Modal>` crée une fenêtre native,
+   * ce qui coûte une à deux trames APRÈS le commit. Le glissement commençait
+   * donc pendant que la fenêtre n'était pas encore à l'écran, et on en perdait
+   * le début.
+   *
+   * Idempotente par `slideStarted` : le filet de sécurité ci-dessous peut
+   * l'appeler sans risquer de relancer une animation déjà en cours.
+   */
+  const slideIn = useCallback(() => {
+    if (slideStarted.current) return;
+    slideStarted.current = true;
+    clearTimeout(showFallback.current);
+    translateY.value = withTiming(0, { ...TIMING, reduceMotion: ReduceMotion.System });
+  }, [translateY]);
+
+  /**
+   * Filet de sécurité. `onShow` est fiable sur les deux plateformes, mais une
+   * feuille montée qui resterait hors écran serait une impasse totale : plus
+   * rien à toucher, et le fond déjà assombri. Même discipline que l'ouverture
+   * de l'accueil, où trois sorties garantissent que les boutons finissent
+   * toujours par apparaître — une animation ne tient jamais le contenu en
+   * otage.
+   */
   useEffect(() => {
     if (!mounted) return;
-    translateY.value = withTiming(0, { ...TIMING, reduceMotion: ReduceMotion.System });
-  }, [mounted, translateY]);
+    showFallback.current = setTimeout(slideIn, SHOW_FALLBACK_MS);
+    return () => clearTimeout(showFallback.current);
+  }, [mounted, slideIn]);
 
   const close = useCallback(() => {
     translateY.value = withTiming(
@@ -207,6 +255,9 @@ export function ReserveProvider({ children }: PropsWithChildren) {
         transparent
         animationType="none"
         statusBarTranslucent
+        // La fenêtre native est présentée : c'est MAINTENANT que la feuille
+        // peut glisser, et pas au commit React (cf. `slideIn`).
+        onShow={slideIn}
         // Bouton retour Android : referme la feuille au lieu de quitter l'écran.
         onRequestClose={close}
       >

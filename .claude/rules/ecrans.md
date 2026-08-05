@@ -182,6 +182,24 @@ on remonte. Trois choses à ne pas défaire :
   l'outline de la vue — avec `radius.pill`, un parent pleine largeur donne une
   pilule aussi large que l'écran, visible comme une bande grise.
 
+## La feuille de réservation glisse depuis `onShow`, pas depuis un effet
+
+⚠️ Le glissement d'ouverture part de **`<Modal onShow>`** — c'est-à-dire quand
+la fenêtre native est **réellement présentée**. Ne pas revenir à un `useEffect`
+sur l'état `mounted` : il se déclenche au commit React, alors que `<Modal>` crée
+une fenêtre native une à deux trames plus tard, et le début du glissement se
+jouait hors écran.
+
+Un **filet de sécurité** (250 ms) lance la glissade même sans `onShow` : une
+feuille montée mais restée hors écran serait une impasse — plus rien à toucher,
+et le fond déjà assombri. Même règle que l'accueil : une animation ne tient
+jamais le contenu en otage.
+
+`reset()` reste sur le chemin d'ouverture. Ses sept `setState`, plus
+`setMounted`, sont dans le même bloc synchrone : React les regroupe en un seul
+rendu. Les déplacer à la fermeture n'économiserait rien et ferait réapparaître
+l'état précédent si on rouvrait avant la fin de l'animation.
+
 ## Listes
 
 Les listes passent par **`FlatList`** (jamais `ScrollView`) et leurs éléments
