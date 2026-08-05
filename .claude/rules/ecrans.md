@@ -12,45 +12,56 @@ paths:
 
 ## Navigation : ne jamais la réécrire dans un écran
 
-Header, barre d'onglets, transition (`sceneStyleInterpolator` + `transitionSpec`)
-et geste de swipe sont définis dans **`app/(tabs)/_layout.tsx`** — source unique.
-Toute modification de navigation se fait là.
+Header, barre d'onglets et transition (`sceneStyleInterpolator` +
+`transitionSpec`) sont définis dans **`app/(tabs)/_layout.tsx`** — source
+unique. Toute modification de navigation se fait là.
 
-Le swipe enveloppe les écrans via `screenLayout`, donc **aucun écran n'a à le
-savoir**.
+⚠️ **Il n'y a plus de swipe au doigt entre onglets** — la barre d'onglets se
+tape, c'est tout. Il y en a eu un (`SwipeTabsArea`,
+`components/layout/SwipeTabs.tsx`, geste `Gesture.Pan()` enveloppant chaque
+écran via `screenLayout`), retiré le 5 août 2026 : le même geste horizontal
+servait aussi à naviguer dans le carrousel de l'écran Soirées, et les deux
+sources de swipe entraient en conflit — swiper une affiche changeait parfois
+d'onglet. Plutôt que d'arbitrer les deux, le swipe a été retiré de la
+navigation et donné entièrement au carrousel (voir plus bas). `useSwipeGuard()`
+a disparu avec lui ; la rangée de filtres de La Carte (`app/(tabs)/carte.tsx`)
+n'a plus besoin de s'en prémunir.
 
-## Tout défilement horizontal doit porter `useSwipeGuard()`
+## Le carrousel de l'écran Soirées se pilote au tap **et** au swipe
 
-Sans lui, un doigt qui fait défiler une rangée de puces change *aussi* d'onglet :
-les deux gestes sont identiques.
+« À l'affiche » et « Artist Spot » (`EventSpotlight`/`ArtistSpotlight`,
+mécanique commune dans `components/features/PosterCarousel.tsx`) offrent deux
+façons équivalentes d'avancer :
 
-```tsx
-<ScrollView horizontal {...useSwipeGuard()} />
-```
+- **le tap sur l'affiche** — avance toujours à l'élément suivant, en boucle ;
+- **le swipe horizontal** — un `Gesture.Pan()` posé sur l'affiche, gauche pour
+  avancer, droite pour reculer, avec un aperçu qui suit le doigt
+  (`dragX`, amorti) et un seuil de distance/vitesse pour valider le
+  changement ; en dessous du seuil, l'affiche revient au centre par un ressort.
 
-⚠️ **Imbriqué dans le `ScrollView` vertical de l'écran, importer ce `ScrollView`
-depuis `react-native-gesture-handler`, pas `react-native`.** Rencontré au
-chantier 2 (le carrousel « À l'affiche » / « Les pépites ») : le `ScrollView`
-natif de React Native se fait parfois voler le geste par le `Gesture.Pan()` de
-`SwipeTabsArea` une fois posé à l'intérieur d'un autre `ScrollView` — `blocked`
-passe bien à `true` au toucher, mais le swipe change quand même d'onglet,
-**silencieusement, sans erreur**. `useSwipeGuard()` seul ne suffit pas dans ce
-cas ; le `ScrollView` de `react-native-gesture-handler` s'annonce correctement
-auprès du même arbitrage tactile que `SwipeTabsArea` et referme le trou. La
-rangée de filtres de La Carte n'a jamais eu ce problème : elle est imbriquée
-dans une `FlatList`, pas un `ScrollView`.
+Les deux déclenchent le **même changement d'état** (`activeId`/`activeEventId`
+dans `soirees.tsx`), donc la **même transition** `AnimatePresence` (fondu +
+scale) prend le relais une fois le changement validé — le geste de glissement
+n'est qu'un aperçu, jamais la transition finale elle-même.
 
-⚠️ **Ce contournement ne concerne plus les carrousels de l'écran Soirées.**
-Après l'avoir vécu à l'écran, Jonathan a jugé le swipe dans une affiche trop
-proche du swipe de navigation entre onglets — trop de gestes similaires, trop
-de confusion. « À l'affiche » et « Artist Spot » naviguent désormais **au
-tap** (`AnimatePresence`, fondu + scale, jamais de glissement latéral — ça
-ressemblerait justement au geste retiré), synchronisés entre eux par un seul
-`activeEventId` porté par `soirees.tsx`. Plus de `ScrollView`, plus de
-`useSwipeGuard()`, plus de piège RNGH à ce sujet dans
-`components/features/PosterCarousel.tsx` : cette règle reste vraie pour tout
-**futur** défilement horizontal (la rangée de filtres de La Carte, par
-exemple), mais plus pour ces deux-là.
+⚠️ **`Gesture.Pan()` est imbriqué dans le `ScrollView` vertical de l'écran** :
+`activeOffsetX`/`failOffsetY` arbitrent avec le défilement de la page comme
+`SwipeTabsArea` le faisait en son temps avec le swipe d'onglets, mais il n'y a
+plus de second geste horizontal concurrent à cet endroit — seul le défilement
+vertical de la page doit rester prioritaire au-delà du seuil vertical.
+
+**Toute la page suit le geste, pas seulement l'affiche.** Un `pageFollowX`
+(valeur partagée Reanimated, levée dans `soirees.tsx`, transmise aux deux
+sections) applique un très léger `translateX` à l'ensemble du contenu de
+l'écran pendant le glissement — qu'on soit en haut ou en bas de la page, le
+`transform` s'applique au conteneur qui enveloppe tout le contenu défilable,
+pas à la position de défilement. Revient à 0 par ressort au relâchement, que
+le seuil ait été franchi ou non.
+
+`prefers-reduced-motion` coupe l'aperçu de glissement (`dragX`/`pageFollowX`
+restent à 0) mais **pas** la fonction : swiper au-delà du seuil change
+toujours de diapositive, seule la prévisualisation animée disparaît — même
+convention que le reste du fichier.
 
 ## Listes
 

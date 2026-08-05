@@ -7,7 +7,6 @@ import { useCallback, useMemo, useState } from 'react';
 import { FlatList, ScrollView, StyleSheet, Text, View, type ListRenderItem } from 'react-native';
 
 import { MenuBlockView } from '@/components/features/MenuBlockView';
-import { useSwipeGuard } from '@/components/layout/SwipeTabs';
 import { Chip } from '@/components/ui/Chip';
 import { Reveal } from '@/components/ui/Reveal';
 import { colors, fonts, spacing, type } from '@/constants/theme';
@@ -15,9 +14,6 @@ import { MENU_FILTERS, menuBlocks, type MenuBlock, type MenuFilter } from '@/dat
 
 export default function CarteScreen() {
   const [filter, setFilter] = useState<MenuFilter>('tout');
-  // Cette rangée défile à l'horizontale, comme le geste de navigation entre
-  // onglets : le garde-fou neutralise le second tant qu'un doigt est posé ici.
-  const swipeGuard = useSwipeGuard();
 
   const blocks = useMemo(
     () => (filter === 'tout' ? menuBlocks : menuBlocks.filter((b) => b.category === filter)),
@@ -46,7 +42,6 @@ export default function CarteScreen() {
           contentContainerStyle={styles.filters}
           style={styles.filtersRow}
           accessibilityLabel="Filtrer la carte"
-          {...swipeGuard}
         >
           {MENU_FILTERS.map((item) => (
             <Chip

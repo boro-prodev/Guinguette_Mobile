@@ -1,13 +1,15 @@
 /**
  * « À l'affiche » — une soirée à la fois, avec son compte à rebours.
- * Navigation **au tap** (l'affiche avance à la soirée suivante, en boucle) ou
- * par l'une des pastilles du bas — plus de swipe depuis la révision qui a
- * suivi le chantier « Artist Spot » : swiper l'affiche entrait en conflit
- * avec le swipe de navigation entre onglets.
+ * Navigation **au tap** (avance à la soirée suivante, en boucle) **ou au
+ * swipe** (gauche pour avancer, droite pour reculer) — les deux gestes
+ * cohabitent depuis que le swipe d'onglets a disparu (5 août 2026, voir
+ * `app/(tabs)/_layout.tsx`) : plus rien ne se le dispute avec le carrousel.
+ * Le geste lui-même vit dans `usePosterSwipe` (`PosterCarousel.tsx`), partagé
+ * avec `ArtistSpotlight`.
  *
  * L'état actif (`activeId`) est **contrôlé par `soirees.tsx`**, pas local à
  * ce composant : c'est ce qui synchronise « À l'affiche » avec « Artist
- * Spot » — taper l'une ou l'autre affiche avance la même soirée partagée.
+ * Spot » — avancer l'une ou l'autre affiche avance la même soirée partagée.
  *
  * Le panneau d'informations (`EventDetailPane`) reste **toujours affiché**
  * sous l'affiche active. Changer de soirée le remonte à neuf (`key={active.id}`),
@@ -18,7 +20,13 @@ import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { memo, useCallback } from 'react';
 import { StyleSheet } from 'react-native';
-import Animated, { LinearTransition, ReduceMotion, useReducedMotion } from 'react-native-reanimated';
+import { GestureDetector } from 'react-native-gesture-handler';
+import Animated, {
+  LinearTransition,
+  ReduceMotion,
+  useReducedMotion,
+  type SharedValue,
+} from 'react-native-reanimated';
 import { AnimatePresence, Text, Theme, View, XStack, YStack } from 'tamagui';
 
 import { Countdown } from '@/components/features/Countdown';
@@ -32,6 +40,7 @@ import {
   PosterShell,
   PosterTitle,
   tagLabelStyle,
+  usePosterSwipe,
 } from '@/components/features/PosterCarousel';
 import type { GuinguetteEvent } from '@/data/events';
 
@@ -42,9 +51,17 @@ type EventSpotlightProps = {
   /** Id de la soirée active — partagé avec `ArtistSpotlight` par `soirees.tsx`. */
   activeId: string;
   onChangeActive: (id: string) => void;
+  /** Fraction du glissement à répercuter sur toute la page — voir `soirees.tsx`. */
+  pageFollowX?: SharedValue<number>;
 };
 
-function EventSpotlightComponent({ kicker, events, activeId, onChangeActive }: EventSpotlightProps) {
+function EventSpotlightComponent({
+  kicker,
+  events,
+  activeId,
+  onChangeActive,
+  pageFollowX,
+}: EventSpotlightProps) {
   const reduceMotion = useReducedMotion();
   const index = Math.max(0, events.findIndex((event) => event.id === activeId));
   const active = events[index];
@@ -53,6 +70,18 @@ function EventSpotlightComponent({ kicker, events, activeId, onChangeActive }: E
     const next = events[(index + 1) % events.length];
     if (next) onChangeActive(next.id);
   }, [events, index, onChangeActive]);
+
+  const retreat = useCallback(() => {
+    const previous = events[(index - 1 + events.length) % events.length];
+    if (previous) onChangeActive(previous.id);
+  }, [events, index, onChangeActive]);
+
+  const { gesture, dragStyle } = usePosterSwipe({
+    onNext: advance,
+    onPrevious: retreat,
+    pageFollowX,
+    reduceMotion,
+  });
 
   if (!active) return null;
 
@@ -68,59 +97,66 @@ function EventSpotlightComponent({ kicker, events, activeId, onChangeActive }: E
         <Kicker>{kicker}</Kicker>
 
         <PosterShell>
-          {/* Fondu + scale seulement, jamais de glissement latéral : ça
-              ressemblerait à un swipe, exactement le geste qu'on a retiré. */}
-          <AnimatePresence>
-            <Poster
-              key={active.id}
-              transition={reduceMotion ? null : 'medium'}
-              opacity={1}
-              scale={1}
-              enterStyle={{ opacity: 0, scale: 0.96 }}
-              exitStyle={{ opacity: 0, scale: 0.96 }}
-              pressStyle={{ scale: 0.97 }}
+          <GestureDetector gesture={gesture}>
+            <Animated.View
+              style={[StyleSheet.absoluteFill, dragStyle]}
               accessibilityRole="button"
-              accessibilityLabel={`${active.title}, ${active.when}. Toucher pour voir la soirée suivante.`}
-              onPress={advance}
+              accessibilityLabel={`${active.title}, ${active.when}. Toucher ou glisser pour changer de soirée.`}
             >
-              <Image
-                source={active.image}
-                style={StyleSheet.absoluteFill}
-                contentFit="cover"
-                transition={reduceMotion ? 0 : 300}
-                accessibilityLabel={active.alt}
-                cachePolicy="memory-disk"
-              />
-
-              <LinearGradient
-                pointerEvents="none"
-                colors={['rgba(12,23,32,0)', 'rgba(12,23,32,0.85)']}
-                locations={[0.35, 1]}
-                style={StyleSheet.absoluteFill}
-              />
-
-              <XStack position="absolute" top="$md" left="$md">
-                <View
-                  backgroundColor={active.tagColor}
-                  paddingHorizontal="$sm"
-                  paddingVertical="$xs"
-                  borderRadius="$pill"
+              {/* Fondu + scale : la transition validée (tap ou swipe au-delà
+                  du seuil) passe toujours par là, jamais par un glissement
+                  continu — l'aperçu du doigt (dragStyle) est ailleurs. */}
+              <AnimatePresence>
+                <Poster
+                  key={active.id}
+                  transition={reduceMotion ? null : 'medium'}
+                  opacity={1}
+                  scale={1}
+                  enterStyle={{ opacity: 0, scale: 0.96 }}
+                  exitStyle={{ opacity: 0, scale: 0.96 }}
                 >
-                  <Text style={[tagLabelStyle, { color: active.tagTextColor }]}>{active.tag}</Text>
-                </View>
-              </XStack>
+                  <Image
+                    source={active.image}
+                    style={StyleSheet.absoluteFill}
+                    contentFit="cover"
+                    transition={reduceMotion ? 0 : 300}
+                    accessibilityLabel={active.alt}
+                    cachePolicy="memory-disk"
+                  />
 
-              {/* Sur la photo, c'est le thème « lampion » qui donne le voile
-                  sombre et le texte clair — aucune couleur écrite ici. */}
-              <Theme name="lampion">
-                <YStack gap="$base" padding="$md">
-                  <Countdown startsAt={active.startsAt} />
-                  <PosterTitle>{active.title}</PosterTitle>
-                  <PosterMeta>{`${active.artist} · ${active.when}`}</PosterMeta>
-                </YStack>
-              </Theme>
-            </Poster>
-          </AnimatePresence>
+                  <LinearGradient
+                    pointerEvents="none"
+                    colors={['rgba(12,23,32,0)', 'rgba(12,23,32,0.85)']}
+                    locations={[0.35, 1]}
+                    style={StyleSheet.absoluteFill}
+                  />
+
+                  <XStack position="absolute" top="$md" left="$md">
+                    <View
+                      backgroundColor={active.tagColor}
+                      paddingHorizontal="$sm"
+                      paddingVertical="$xs"
+                      borderRadius="$pill"
+                    >
+                      <Text style={[tagLabelStyle, { color: active.tagTextColor }]}>
+                        {active.tag}
+                      </Text>
+                    </View>
+                  </XStack>
+
+                  {/* Sur la photo, c'est le thème « lampion » qui donne le voile
+                      sombre et le texte clair — aucune couleur écrite ici. */}
+                  <Theme name="lampion">
+                    <YStack gap="$base" padding="$md">
+                      <Countdown startsAt={active.startsAt} />
+                      <PosterTitle>{active.title}</PosterTitle>
+                      <PosterMeta>{`${active.artist} · ${active.when}`}</PosterMeta>
+                    </YStack>
+                  </Theme>
+                </Poster>
+              </AnimatePresence>
+            </Animated.View>
+          </GestureDetector>
         </PosterShell>
 
         <XStack justifyContent="center" alignItems="center">

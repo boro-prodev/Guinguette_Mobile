@@ -69,6 +69,25 @@
 > commune). Toute la mécanique `ScrollView`/`useSwipeGuard`/RNGH documentée au
 > chantier 2 pour ces deux carrousels a disparu avec elle — `useSwipeGuard()`
 > reste utile ailleurs (la rangée de filtres de La Carte), mais plus ici.
+> **Mise à jour du 5 août 2026 (suite)** — Jonathan a testé le retour au tap
+> décrit ci-dessus et trouvé deux choses à revoir : un **glitch visuel** au
+> changement d'affiche (la nouvelle image apparaissait écrasée avant de
+> reprendre sa taille — `Poster` n'était pas positionné en absolu dans
+> `PosterShell`, donc l'affiche sortante et l'affiche entrante se partageaient
+> l'espace en flux normal le temps du crossfade `AnimatePresence` ; corrigé),
+> et une reformulation du geste : **le swipe entre onglets disparaît
+> entièrement** (`SwipeTabsArea` et `components/layout/SwipeTabs.tsx`
+> supprimés, navigation par la barre d'onglets uniquement), et le geste ainsi
+> libéré est **donné au carrousel de Soirées**, qui offre désormais le tap
+> **et** le swipe (gauche pour avancer, droite pour reculer) sur « À
+> l'affiche » comme sur « Artist Spot » — deux façons équivalentes de
+> naviguer, portées par un geste unique (`usePosterSwipe`,
+> `components/features/PosterCarousel.tsx`, `Gesture.Race(pan, tap)` de
+> `react-native-gesture-handler`). Un `pageFollowX` partagé (levé dans
+> `soirees.tsx`) répercute une fraction du glissement sur tout le contenu de
+> l'écran pendant le geste — l'effet est le même en haut ou en bas de la page,
+> puisque le `transform` porte sur le conteneur qui enveloppe tout le contenu
+> défilable, pas sur la position de défilement elle-même.
 > **Le reste de ce document n'est pas implémenté.** C'est un plan de travail, pas
 > un compte rendu. L'état réel de l'app est décrit dans `CLAUDE.md`.
 

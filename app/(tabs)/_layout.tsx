@@ -2,8 +2,16 @@
  * Navigation par onglets : les quatre écrans partagent le même header et la même barre
  * basse, et l'onglet actif est déduit de la route par Expo Router.
  * C'est aussi ici que se décide *comment* on passe d'un écran à l'autre : la
- * transition (`sceneStyleInterpolator`) et le geste (`screenLayout`) sont
- * définis à cet endroit et nulle part ailleurs.
+ * transition (`sceneStyleInterpolator`) est définie à cet endroit et nulle
+ * part ailleurs.
+ *
+ * ⚠️ Navigation **au tap uniquement** — pas de swipe au doigt entre onglets.
+ * Il y en a eu un (`SwipeTabsArea`, `components/layout/SwipeTabs.tsx`),
+ * retiré : le même geste servait aussi à naviguer dans les carrousels de
+ * l'écran Soirées, ce qui créait une ambiguïté entre « je swipe l'affiche »
+ * et « je change d'onglet ». Le swipe horizontal appartient maintenant au
+ * carrousel (`components/features/PosterCarousel.tsx`), la barre d'onglets
+ * reprend le tap classique.
  */
 import { Tabs } from 'expo-router';
 import { Animated, StyleSheet } from 'react-native';
@@ -11,7 +19,6 @@ import { useReducedMotion } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppHeader } from '@/components/layout/AppHeader';
-import { SwipeTabsArea } from '@/components/layout/SwipeTabs';
 import { TabIcon } from '@/components/layout/TabIcon';
 import { colors, radius, spacing, TAB_BAR_HEIGHT, type } from '@/constants/theme';
 
@@ -91,9 +98,6 @@ export default function TabsLayout() {
               },
             }),
       }}
-      screenLayout={({ route, children }) => (
-        <SwipeTabsArea routeName={route.name}>{children}</SwipeTabsArea>
-      )}
     >
       <Tabs.Screen
         name="index"

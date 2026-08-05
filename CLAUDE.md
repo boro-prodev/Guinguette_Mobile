@@ -69,16 +69,15 @@ automatiquement selon l'intention (`.claude/skills/environnement/`).
 | `ROADMAP.md` | **Prochaines étapes** — chantiers à venir et questions ouvertes |
 | `.claude/rules/` | Les règles détaillées, par domaine (voir l'index ci-dessus) |
 | `app/_layout.tsx` | Racine : polices, safe-area, `TamaguiProvider`, `ToastProvider`, `ReserveProvider` |
-| `app/(tabs)/_layout.tsx` | **Source unique de la navigation** (header, onglets, transition, swipe) |
+| `app/(tabs)/_layout.tsx` | **Source unique de la navigation** (header, onglets, transition) — **au tap uniquement**, plus de swipe au doigt entre onglets |
 | `app/(tabs)/index · carte · soirees · infos` | Les 4 écrans (accueil, menu, événements, infos pratiques) |
 | `constants/theme.ts` | **Valeurs brutes du design system** (couleurs, échelle typo, spacing, radius, ombres, polices) |
 | `tamagui.config.ts` | Expose `theme.ts` à Tamagui : tokens, polices, thèmes d'accent, animations |
 | `components/ui/Button.tsx` | **LE bouton de l'app** — un seul objet, décliné par thème |
 | `components/ui/PressableScale.tsx` | Zone tactile brute — **pas** un bouton |
-| `components/layout/SwipeTabs.tsx` | Navigation au doigt entre onglets (+ `useSwipeGuard`) |
-| `components/features/PosterCarousel.tsx` | Habillage partagé par les deux carrousels de Soirées (styled components) |
-| `components/features/EventSpotlight.tsx` / `EventDetailPane.tsx` | « À l'affiche » : une soirée à la fois, **au tap** (pastilles pour un saut direct), panneau **toujours affiché** en dessous — description, programme, jauge, tarif, bouton « Participer » |
-| `components/features/ArtistSpotlight.tsx` / `ArtistDetailPane.tsx` | « Artist Spot » : même mécanique, appliquée aux artistes (`data/artists.ts`) — bio, style musical, liens site/réseaux sociaux. Synchronisé avec « À l'affiche » via un `activeEventId` partagé (`app/(tabs)/soirees.tsx`) |
+| `components/features/PosterCarousel.tsx` | Habillage partagé par les deux carrousels de Soirées (styled components) et leur geste commun (`usePosterSwipe` — tap **et** swipe, `react-native-gesture-handler`) |
+| `components/features/EventSpotlight.tsx` / `EventDetailPane.tsx` | « À l'affiche » : une soirée à la fois, **au tap ou au swipe**, panneau **toujours affiché** en dessous — description, programme, jauge, tarif, bouton « Participer » |
+| `components/features/ArtistSpotlight.tsx` / `ArtistDetailPane.tsx` | « Artist Spot » : même mécanique, appliquée aux artistes (`data/artists.ts`) — bio, style musical, liens site/réseaux sociaux. Synchronisé avec « À l'affiche » via un `activeEventId` partagé (`app/(tabs)/soirees.tsx`), qui porte aussi `pageFollowX` (toute la page suit le swipe du carrousel) |
 | `components/features/Countdown.tsx` | Compte à rebours vivant (retick chaque minute, point qui bat) |
 | `components/features/SeatsGauge.tsx` | Jauge de places, pousse depuis la gauche à l'apparition |
 | `features/reserve/` | Parcours de réservation simulé (bottom sheet 3 étapes) |

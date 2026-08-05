@@ -1,18 +1,29 @@
 /**
  * Ce que « À l'affiche » et « Artist Spot » partagent : la coquille visuelle
  * du carrousel (une affiche à la fois, animée par `AnimatePresence` dans
- * chaque écran) et du panneau toujours affiché en dessous. Le contenu de
- * l'affiche et du panneau reste propre à chaque écran
- * (`EventSpotlight`/`EventDetailPane` vs `ArtistSpotlight`/
- * `ArtistDetailPane`) — ce fichier ne porte que l'habillage commun.
+ * chaque écran), le geste qui la pilote (`usePosterSwipe`, ci-dessous) et le
+ * panneau toujours affiché en dessous. Le contenu de l'affiche et du panneau
+ * reste propre à chaque écran (`EventSpotlight`/`EventDetailPane` vs
+ * `ArtistSpotlight`/`ArtistDetailPane`) — ce fichier ne porte que l'habillage
+ * et la mécanique communs.
  *
- * ⚠️ Pas de `ScrollView` ici : les deux carrousels naviguent au **tap**, pas
- * au swipe (revu après le chantier 2 — swiper une affiche entrait en
- * conflit avec le swipe de navigation entre onglets, trop de gestes
- * proches). `useSwipeGuard()` reste utile ailleurs dans l'app (la rangée de
- * filtres de La Carte), mais plus ici.
+ * ⚠️ Le swipe d'onglets a disparu le 5 août 2026 (voir
+ * `app/(tabs)/_layout.tsx`) : le même geste horizontal servait aux deux à la
+ * fois et entrait en conflit. Le carrousel en hérite entièrement — tap **et**
+ * swipe y cohabitent désormais, sans plus jamais rien à arbitrer avec la
+ * navigation entre onglets.
  */
+import { useCallback, useMemo } from 'react';
 import { StyleSheet } from 'react-native';
+import { Gesture } from 'react-native-gesture-handler';
+import {
+  runOnJS,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  withTiming,
+  type SharedValue,
+} from 'react-native-reanimated';
 import { styled, Text, View } from 'tamagui';
 
 import { fonts } from '@/constants/theme';
@@ -38,13 +49,128 @@ export const PosterShell = styled(View, {
   borderRadius: '$md',
   overflow: 'hidden',
   backgroundColor: '$backgroundStrong',
+  // Contexte de positionnement pour `Poster`, ci-dessous — ne pas retirer.
+  position: 'relative',
 });
 
+/**
+ * ⚠️ `position: 'absolute'` + les quatre côtés à 0 ne sont pas cosmétiques :
+ * `AnimatePresence` garde l'affiche sortante montée le temps de son animation
+ * de sortie, donc l'ancienne et la nouvelle coexistent brièvement comme deux
+ * enfants de `PosterShell`. Sans position absolue, ce sont deux vues en flux
+ * normal (`flex: 1` dans un parent en colonne) : elles se partagent alors la
+ * hauteur de 300 au lieu de se superposer, et la nouvelle affiche apparaît un
+ * instant écrasée à mi-hauteur avant de reprendre sa taille une fois
+ * l'ancienne démontée. La position absolue les superpose correctement, quel
+ * que soit le nombre d'affiches montées en même temps.
+ */
 export const Poster = styled(View, {
   name: 'Poster',
-  flex: 1,
+  position: 'absolute',
+  top: 0,
+  left: 0,
+  right: 0,
+  bottom: 0,
   justifyContent: 'flex-end',
 });
+
+/** Distance (px) ou vitesse (px/s) franchie qui valide un swipe de carrousel. */
+const SWIPE_DISTANCE = 56;
+const SWIPE_VELOCITY = 600;
+/** Part du glissement du doigt appliquée à l'affiche elle-même, en aperçu. */
+const POSTER_FOLLOW = 0.5;
+/** Part du même glissement répercutée sur toute la page — un effet plus
+ *  subtil que sur l'affiche, qui reste le foyer du geste. */
+const PAGE_FOLLOW = 0.12;
+const FOLLOW_SPRING = { damping: 18, stiffness: 220, mass: 0.9 };
+
+/**
+ * Geste partagé par « À l'affiche » et « Artist Spot » : glisser à gauche
+ * avance, glisser à droite recule, taper avance — les trois aboutissent au
+ * même `onNext`/`onPrevious`, donc à la même transition `AnimatePresence`
+ * dans l'écran appelant. Le glissement lui-même n'est qu'un **aperçu** (léger
+ * `translateX` + compression au toucher) : la validation ne se joue qu'au
+ * relâchement, jamais en continu.
+ *
+ * `Gesture.Race(pan, tap)`, pas un `onPress` Tamagui séparé : les deux
+ * viennent du même système (`react-native-gesture-handler`), donc rien à
+ * arbitrer entre deux mécaniques tactiles différentes. Le tap gagne la course
+ * quand le doigt n'a quasi pas bougé ; sinon c'est le pan qui l'emporte dès
+ * qu'il franchit son seuil d'activation horizontal.
+ *
+ * `pageFollowX`, optionnel, reçoit une fraction du même glissement — c'est ce
+ * qui fait suivre toute la page, pas seulement l'affiche (voir `soirees.tsx`).
+ */
+export function usePosterSwipe({
+  onNext,
+  onPrevious,
+  pageFollowX,
+  reduceMotion,
+}: {
+  onNext: () => void;
+  onPrevious: () => void;
+  pageFollowX?: SharedValue<number>;
+  reduceMotion: boolean;
+}) {
+  const dragX = useSharedValue(0);
+  const pressScale = useSharedValue(1);
+
+  const commitSwipe = useCallback(
+    (direction: 1 | -1) => {
+      if (direction === 1) onNext();
+      else onPrevious();
+    },
+    [onNext, onPrevious]
+  );
+
+  const gesture = useMemo(() => {
+    const pan = Gesture.Pan()
+      // Comme l'ancien swipe d'onglets : il faut une intention horizontale
+      // franche, et le geste cède vite à la verticale pour laisser défiler
+      // la page — c'est elle qui reste prioritaire au-delà du seuil.
+      .activeOffsetX([-10, 10])
+      .failOffsetY([-12, 12])
+      .onBegin(() => {
+        pressScale.value = withTiming(0.97, { duration: 80 });
+      })
+      .onUpdate((event) => {
+        if (reduceMotion) return;
+        dragX.value = event.translationX * POSTER_FOLLOW;
+        if (pageFollowX) pageFollowX.value = event.translationX * PAGE_FOLLOW;
+      })
+      .onEnd((event) => {
+        const passed =
+          Math.abs(event.translationX) > SWIPE_DISTANCE ||
+          Math.abs(event.velocityX) > SWIPE_VELOCITY;
+        if (passed) runOnJS(commitSwipe)(event.translationX < 0 ? 1 : -1);
+      })
+      .onFinalize(() => {
+        dragX.value = withSpring(0, FOLLOW_SPRING);
+        pressScale.value = withTiming(1, { duration: 150 });
+        if (pageFollowX) pageFollowX.value = withSpring(0, FOLLOW_SPRING);
+      });
+
+    const tap = Gesture.Tap()
+      .maxDistance(10)
+      .onBegin(() => {
+        pressScale.value = withTiming(0.97, { duration: 80 });
+      })
+      .onEnd((_event, success) => {
+        if (success) runOnJS(onNext)();
+      })
+      .onFinalize(() => {
+        pressScale.value = withTiming(1, { duration: 150 });
+      });
+
+    return Gesture.Race(pan, tap);
+  }, [commitSwipe, dragX, onNext, pageFollowX, pressScale, reduceMotion]);
+
+  const dragStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: dragX.value }, { scale: pressScale.value }],
+  }));
+
+  return { gesture, dragStyle };
+}
 
 export const PosterTitle = styled(Text, {
   name: 'PosterTitle',
