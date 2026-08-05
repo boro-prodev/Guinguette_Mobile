@@ -23,7 +23,7 @@
  */
 import { BlurView } from 'expo-blur';
 import type { ReactNode, RefObject } from 'react';
-import { Children, isValidElement, useCallback, useEffect, useRef, useState } from 'react';
+import { Children, isValidElement, useCallback, useEffect } from 'react';
 import type { View as RNViewInstance } from 'react-native';
 import { View as RNView, StyleSheet } from 'react-native';
 import Reanimated, {
@@ -34,6 +34,7 @@ import Reanimated, {
   useSharedValue,
   withRepeat,
   withTiming,
+  type SharedValue,
 } from 'react-native-reanimated';
 import {
   createStyledContext,
@@ -171,21 +172,47 @@ const ButtonLabel = styled(Text, {
 });
 
 /**
- * Le halo. Il déborde volontairement du cadre (insets négatifs) pour rayonner
- * au-delà du bord, et n'intercepte aucun toucher.
+ * Le halo de pression. Il déborde volontairement du cadre (insets négatifs)
+ * pour rayonner au-delà du bord, et n'intercepte aucun toucher.
+ *
+ * ⚠️ **Un seul halo, monté en permanence** (chantier 4). La version précédente
+ * en montait un NOUVEAU à chaque appui (`setPulses([...current, id])`) et le
+ * démontait 560 ms plus tard par `setTimeout` : deux rendus React et un cycle
+ * montage/démontage par pression, sur le fil JS, à l'instant précis où le doigt
+ * touche. C'était le suspect n° 1 de l'« impression de freeze » remontée par
+ * Jonathan. Appuyer n'écrit désormais que dans une valeur partagée.
+ *
+ * `progress` va de 0 (halo au plus vif) à 1 (dissipé) — il vaut donc **1 au
+ * repos**, ce qui rend l'anneau invisible sans rien démonter. L'aller reproduit
+ * exactement l'ancien `enterStyle` : opacité 0,45 → 0, échelle 0,9 → 1,45.
  */
-const Halo = styled(View, {
-  name: 'ButtonHalo',
-  position: 'absolute',
-  top: -6,
-  right: -6,
-  bottom: -6,
-  left: -6,
-  borderRadius: '$pill',
-  borderWidth: 2,
-  borderColor: '$glow',
-  pointerEvents: 'none',
-});
+function PressHalo({ progress }: { progress: SharedValue<number> }) {
+  const theme = useTheme();
+
+  const style = useAnimatedStyle(() => ({
+    opacity: 0.45 * (1 - progress.value),
+    transform: [{ scale: 0.9 + 0.55 * progress.value }],
+  }));
+
+  return (
+    <Reanimated.View
+      pointerEvents="none"
+      style={[
+        StyleSheet.absoluteFill,
+        {
+          top: -6,
+          right: -6,
+          bottom: -6,
+          left: -6,
+          borderRadius: radius.pill,
+          borderWidth: 2,
+          borderColor: String(theme.glow?.val),
+        },
+        style,
+      ]}
+    />
+  );
+}
 
 /** Icône au trait, à la couleur et à la taille du bouton qui la contient. */
 function ButtonIcon({ name, strokeWidth = 2 }: { name: IconName; strokeWidth?: number }) {
@@ -239,7 +266,7 @@ function EmphasisRing() {
       pointerEvents="none"
       style={[
         StyleSheet.absoluteFill,
-        // Mêmes insets que `Halo` (-6) : même rayonnement, mais permanent —
+        // Mêmes insets que `PressHalo` (-6) : même rayonnement, mais permanent —
         // pas de montage/démontage à chaque appui, pas de risque de
         // replonger dans le crash Reanimated rencontré sur le cadre animé
         // par Tamagui (cf. `ButtonGlassFill`, plus bas).
@@ -257,7 +284,7 @@ function EmphasisRing() {
  * délite sur les zones claires d'une photo comme `outline` avant lui.
  *
  * `emphasis` réserve à CE bouton le traitement « ampoule » déjà utilisé par le
- * halo de pression (`Halo` plus bas) : un anneau ambré qui bat, ici permanent
+ * halo de pression (`PressHalo` plus haut) : un anneau ambré qui bat, ici permanent
  * plutôt que déclenché au toucher. De quoi rétablir un rang principal quand
  * deux boutons `tone="glass"` partagent sinon exactement le même traitement —
  * sans revenir à un aplat de couleur qui casserait l'esthétique verre.
@@ -356,31 +383,20 @@ function ButtonImpl({
   blurTarget,
   ...props
 }: ButtonProps) {
-  const [pulses, setPulses] = useState<number[]>([]);
-  const nextPulseId = useRef(0);
-  const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const reduceMotion = useReducedMotion();
-
-  useEffect(() => {
-    const pending = timers.current;
-    return () => pending.forEach(clearTimeout);
-  }, []);
+  /** 0 = halo au plus vif, 1 = dissipé. Au repos il vaut donc 1, pas 0. */
+  const halo = useSharedValue(1);
 
   const firePulse = useCallback(() => {
     // Le halo est purement décoratif : quand l'utilisateur a désactivé les
     // animations au niveau du système, on ne l'allume pas du tout.
     if (reduceMotion || disabled) return;
 
-    const id = (nextPulseId.current += 1);
-    setPulses((current) => [...current, id]);
-
-    const timer = setTimeout(() => {
-      setPulses((current) => current.filter((pulse) => pulse !== id));
-      timers.current = timers.current.filter((pending) => pending !== timer);
-    }, HALO_MS);
-
-    timers.current.push(timer);
-  }, [disabled, reduceMotion]);
+    // Un appui n'est plus qu'une écriture dans une valeur partagée : ni rendu
+    // React, ni montage, ni `setTimeout` à nettoyer. Le halo est déjà là.
+    halo.value = 0;
+    halo.value = withTiming(1, { duration: HALO_MS, reduceMotion: ReduceMotion.System });
+  }, [disabled, halo, reduceMotion]);
 
   // Une chaîne nue passée en enfant est enveloppée : cela évite d'écrire
   // <Button.Text> pour les neuf boutons sur dix qui n'ont qu'un libellé.
@@ -411,18 +427,7 @@ function ButtonImpl({
       {...props}
     >
       {tone === 'glass' && <ButtonGlassFill emphasis={emphasis} blurTarget={blurTarget} />}
-      {pulses.map((id) => (
-        <Halo
-          key={id}
-          transition="halo"
-          // Le style au repos est déjà éteint : monté sur `enterStyle`, le
-          // halo joue donc l'aller (diffusion + fondu) puis se démonte alors
-          // qu'il est déjà invisible. Pas besoin d'AnimatePresence.
-          opacity={0}
-          scale={1.45}
-          enterStyle={{ opacity: 0.45, scale: 0.9 }}
-        />
-      ))}
+      <PressHalo progress={halo} />
       {content}
     </ButtonFrame>
   );

@@ -99,8 +99,26 @@ fait là et nulle part ailleurs.**
 | `quick` | Réponse immédiate — compression sous le doigt |
 | `lazy` | Ample et posé — dépliages, panneaux |
 | `medium` | Changements d'état de contenu |
-| `halo` | Le seul en `timing` — halo de pression |
+| `halo` | ~~Le seul en `timing` — halo de pression~~ **plus utilisé** : le halo est passé en Reanimated pur (voir ci-dessous) |
 | `fade` | Fondu court, sans mouvement |
+
+## Le halo de pression ne monte plus rien
+
+⚠️ **Un seul `PressHalo`, monté en permanence** (`Button.tsx`), piloté par une
+valeur partagée Reanimated : `0` = halo au plus vif, `1` = dissipé, donc **1 au
+repos**, invisible sans rien démonter. Appuyer n'est qu'une écriture dans cette
+valeur.
+
+La version précédente montait un `<Halo>` Tamagui **par appui**
+(`setPulses([...current, id])`) et le démontait 560 ms plus tard par
+`setTimeout` : deux rendus React et un cycle montage/démontage à chaque
+pression, sur le fil JS, à l'instant exact où le doigt touche. C'était le
+suspect n° 1 de l'« impression de freeze » du chantier 4. **Ne pas y revenir**,
+et ne pas rebrancher l'animation `halo` de `tamagui.config.ts`, qui n'a plus
+d'utilisateur.
+
+Même raison d'être que `EmphasisRing`, juste à côté : sur ce bouton, tout ce qui
+clignote se pilote par valeur partagée, jamais par montage.
 
 ## Pièges Tamagui
 

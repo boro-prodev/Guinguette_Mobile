@@ -166,7 +166,7 @@ ne soit pas reposée trois semaines plus tard.
 
 | # | Chantier | État | Pourquoi à ce moment-là |
 |---|---|---|---|
-| **4** | Mouvement — pression du bouton, ouverture de la feuille | ✅ **prêt** | Ajouté le 3 août 2026. Indépendant des autres, mais **transverse** : touche LE bouton et la feuille, donc tous les écrans. À faire quand le reste est stable. **C'est aussi là que se traite la question de performance** ouverte le 5 août (voir la question 8). |
+| **4** | Mouvement — pression du bouton, ouverture de la feuille | 🟡 **entamé** | Ajouté le 3 août 2026. Indépendant des autres, mais **transverse** : touche LE bouton et la feuille, donc tous les écrans. **Le halo est corrigé** (5 août) ; le reste attend une mesure sur téléphone réel (question 8) et l'œil de Jonathan sur le ressenti (question 7). |
 
 ---
 
@@ -787,7 +787,43 @@ réutilisée partout.
 
 ---
 
-# Chantier 4 — Mouvement : la pression du bouton et l'ouverture de la feuille ✅ prêt
+# Chantier 4 — Mouvement : la pression du bouton et l'ouverture de la feuille 🟡 entamé
+
+## Résultat partiel — 5 août 2026
+
+**Fait : le défaut de conception du halo.** Ce document le distingue lui-même du
+reste (« le montage d'un composant par appui reste un défaut de conception
+indépendamment du mode de build : il vaut la peine d'être corrigé même s'il ne
+se voit plus en release »). C'est donc le seul point qui ne dépendait ni d'une
+mesure ni d'un arbitrage visuel.
+
+`<Halo>` (Tamagui, monté par appui) devient **`PressHalo`, monté une fois pour
+toutes** et piloté par une valeur partagée Reanimated. Appuyer n'écrit plus que
+dans cette valeur : **zéro rendu React, zéro montage, plus de `setTimeout` à
+nettoyer** — contre deux rendus et un cycle montage/démontage par pression
+auparavant, sur le fil JS, à l'instant précis où le doigt touche. `useState`,
+`useRef` et l'effet de nettoyage ont disparu de `ButtonImpl` avec lui.
+
+L'animation est reproduite à l'identique : `progress` va de 0 (halo au plus vif)
+à 1 (dissipé), soit opacité 0,45 → 0 et échelle 0,9 → 1,45. Il vaut **1 au
+repos**, ce qui rend l'anneau invisible sans rien démonter — vérifié à l'écran,
+aucun bouton ne porte d'anneau au repos.
+
+⚠️ **L'apparence du halo À L'APPUI n'est pas vérifiée visuellement** : un fondu
+de 560 ms n'est pas saisissable par `screencap` sur cet émulateur (près d'une
+seconde par capture). À regarder à l'œil — ce que la question 7 demande de toute
+façon.
+
+**Pas fait, volontairement :**
+
+- **tous les réglages de ressenti** — `quick` au lieu de `bouncy`, amplitude
+  0,97, durée de la feuille à 300 ms. Ce sont des arbitrages visuels
+  (question 7), pas des correctifs : ils demandent l'œil de Jonathan, et LE
+  bouton de l'app n'est pas l'endroit où trancher du goût tout seul.
+- **l'ouverture de la feuille** (`onShow`, contenu différé, `reset()` hors du
+  chemin critique). Contrairement au halo, ce document ne leur accorde aucune
+  dispense de mesure — et la mesure du 5 août ne vaut rien, l'émulateur tournant
+  en rendu logiciel (question 8). À reprendre après un essai sur téléphone réel.
 
 ## Intention
 
