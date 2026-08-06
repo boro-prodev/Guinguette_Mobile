@@ -29,7 +29,8 @@ export type IconName =
   | 'chevron'
   | 'link'
   | 'instagram'
-  | 'facebook';
+  | 'facebook'
+  | 'flame';
 
 type IconProps = {
   name: IconName;
@@ -136,6 +137,9 @@ const PATHS: Record<IconName, React.ReactNode> = {
   facebook: (
     <Path d="M15 3h-2a4 4 0 0 0-4 4v3H7v4h2v7h4v-7h2.8l.7-4H13V7a1 1 0 0 1 1-1h1V3Z" />
   ),
+  // Le pion de `location`, retourné : même arc, pointe en haut au lieu du bas.
+  // Une flamme n'est jamais qu'une goutte d'eau qui remonte.
+  flame: <Path d="M12 3s7 5.7 7 11a7 7 0 1 1-14 0c0-5.3 7-11 7-11Z" />,
 };
 
 function IconComponent({

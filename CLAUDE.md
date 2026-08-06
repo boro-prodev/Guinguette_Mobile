@@ -77,10 +77,10 @@ automatiquement selon l'intention (`.claude/skills/environnement/`).
 | `components/ui/PressableScale.tsx` | Zone tactile brute — **pas** un bouton |
 | `components/features/NewspaperPager.tsx` | **Le feuilletage de Soirées** — une page entière tourne comme une feuille de journal : geste, perspective, pli. Générique et réutilisable ; tous ses réglages dans l'objet `TURN` |
 | `components/features/SpotlightParts.tsx` | L'habillage commun aux deux sections de Soirées (cadre d'affiche, titraille, panneau à ombre, pastilles). **Aucune mécanique** — le carrousel qu'il portait a été retiré |
-| `components/features/EventSpotlight.tsx` / `EventDetailPane.tsx` | « À l'affiche » : la soirée de la page — affiche, description, programme, jauge, tarif, bouton « Participer » |
+| `components/features/EventSpotlight.tsx` / `EventDetailPane.tsx` | « À l'affiche » : la soirée de la page — affiche, description, programme, jauge d'ambiance, tarif, bouton « J'y serai » |
 | `components/features/ArtistSpotlight.tsx` / `ArtistDetailPane.tsx` | « Artist Spot » : l'artiste de **cette même soirée** (`data/artists.ts`, relié par `eventId`) — bio, style musical, liens site/réseaux sociaux |
 | `components/features/Countdown.tsx` | Compte à rebours vivant (retick chaque minute, point qui bat) |
-| `components/features/SeatsGauge.tsx` | Jauge de places, pousse depuis la gauche à l'apparition |
+| `components/features/HypeGauge.tsx` | Jauge d'ambiance d'une soirée (`data/events.ts` → `hype`) — pousse depuis la gauche à l'apparition, bondit d'un cran quand on tape « J'y serai » |
 | `features/reserve/` | Parcours de réservation simulé (bottom sheet 3 étapes) |
 | `data/` | Données placeholder : `menu.ts`, `events.ts`, `artists.ts`, `venue.ts` |
 | `utils/date.ts · text.ts` | Dates en français (sans `Intl`) ; caractères typographiques nommés (`NBSP`, `NDASH`) |

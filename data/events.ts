@@ -47,9 +47,18 @@ export type GuinguetteEvent = {
   /** Déroulé de la soirée, du premier au dernier moment. */
   program: EventProgramStep[];
   price: string;
-  /** Jauge de la soirée (démo) : total et places déjà réservées. */
-  capacity: number;
-  taken: number;
+  /**
+   * Niveau d'engouement de base, 0–1 (démo — placeholder). C'est lui que
+   * `HypeGauge` affiche, et lui seul qui varie d'une soirée à l'autre pour
+   * rendre la comparaison lisible en démo : le Bal (soirée phare) est le plus
+   * chaud, la soirée Tapas (intimiste) la plus calme.
+   *
+   * ⚠️ Remplace `capacity`/`taken` (jauge de places, `SeatsGauge`), retirés le
+   * 6 août 2026 sur demande de Jonathan : « enlève le système de place
+   * libre ». La démo ne prétend plus donner un compte de sièges, seulement un
+   * ressenti.
+   */
+  hype: number;
   image: ImageSourcePropType;
   alt: string;
 };
@@ -87,8 +96,7 @@ function buildEvents(today: Date): GuinguetteEvent[] {
         { time: '22h00', label: 'Second set et bœuf avec le public' },
       ],
       price: 'Entrée libre',
-      capacity: 80,
-      taken: 63,
+      hype: 0.58,
       image: require('../assets/images/programmation_01.webp'),
       alt: 'Concert live à la guinguette',
     },
@@ -110,8 +118,7 @@ function buildEvents(today: Date): GuinguetteEvent[] {
         { time: '00h00', label: 'Dernière danse sous les lampions' },
       ],
       price: '8 € · gratuit pour les moins de 12 ans',
-      capacity: 200,
-      taken: 88,
+      hype: 0.81,
       image: require('../assets/images/ambiance-soiree.webp'),
       alt: 'Grand bal populaire sous les lampions',
     },
@@ -132,8 +139,7 @@ function buildEvents(today: Date): GuinguetteEvent[] {
         { time: '21h30', label: 'Dégustation commentée, fromages de Viroinval' },
       ],
       price: '22 € la formule dégustation',
-      capacity: 45,
-      taken: 41,
+      hype: 0.32,
       image: require('../assets/images/programmation_02.webp'),
       alt: 'Soirée guinguette et tapas en terrasse',
     },

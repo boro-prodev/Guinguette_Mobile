@@ -8,8 +8,10 @@
  * Le lien vers l'artiste vit désormais dans « Artist Spot »
  * (`ArtistDetailPane`) : ce panneau-ci ne parle que de la soirée.
  *
- * Le bouton « Participer » SIMULÉ : la participation bascule localement
+ * Le bouton « J'y serai » SIMULÉ : la participation bascule localement
  * (AsyncStorage `demo:rsvp:*`) et déclenche un toast. Rien n'est envoyé.
+ * `enabled` fait aussi bondir la jauge d'ambiance d'un cran (`HypeGauge`,
+ * juste au-dessus) — c'est le même booléen qui pilote les deux.
  *
  * ⚠️ **`Pane` (l'ombre portée) ne se démonte jamais.** Remonter tout le
  * panneau à chaque changement de soirée faisait clignoter l'ombre Android
@@ -23,8 +25,8 @@ import { StyleSheet } from 'react-native';
 import Animated, { FadeIn, ReduceMotion, useReducedMotion } from 'react-native-reanimated';
 import { styled, Text, Theme, XStack, YStack } from 'tamagui';
 
+import { HypeGauge } from '@/components/features/HypeGauge';
 import { Body, Pane } from '@/components/features/SpotlightParts';
-import { SeatsGauge } from '@/components/features/SeatsGauge';
 import { useToast } from '@/components/toast/ToastProvider';
 import { Button } from '@/components/ui/Button';
 import { Icon } from '@/components/ui/Icon';
@@ -104,13 +106,13 @@ function EventDetailContent({ event }: EventDetailPaneProps) {
             ))}
           </YStack>
 
-          <SeatsGauge capacity={event.capacity} taken={event.taken} />
+          <HypeGauge hype={event.hype} boosted={enabled} />
 
           <PriceTag>{event.price}</PriceTag>
 
           <Button full accessibilityState={{ selected: enabled }} onPress={handleRsvp}>
             {enabled && <Button.Icon name="check" />}
-            <Button.Text>Participer</Button.Text>
+            <Button.Text>J’y serai</Button.Text>
           </Button>
         </YStack>
       </Animated.View>
