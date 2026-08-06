@@ -526,16 +526,24 @@ const styles = StyleSheet.create({
     // Opaque, sans quoi on verrait la feuille du dessous par transparence.
     backgroundColor: colors.background,
     /**
-     * Les angles de la feuille, arrondis — demande de Jonathan, 6 août 2026 :
-     * une feuille aux coins vifs faisait moins « léché » dès qu'on la
-     * glissait. `radius.md` est le même cran que les affiches et les panneaux
-     * qu'elle contient, donc un arrondi discret plutôt qu'une carte à jouer.
+     * Les angles du HAUT de la feuille, arrondis — demande de Jonathan,
+     * 6 août 2026 : une feuille aux coins vifs faisait moins « léché » dès
+     * qu'on la glissait. `radius.md` est le même cran que les affiches et les
+     * panneaux qu'elle contient, donc un arrondi discret plutôt qu'une carte
+     * à jouer.
+     *
+     * ⚠️ **Seul le haut, pas le bas** — retouché le même jour : la feuille
+     * touche la barre d'onglets en son pied (`styles.frame` épouse
+     * exactement la hauteur entre l'en-tête et la barre), un arrondi bas ne
+     * s'y serait jamais vu et aurait juste laissé passer un triangle de fond
+     * dans les coins, sans raison d'être.
      *
      * `overflow: 'hidden'` n'est pas facultatif : sans lui, seul le fond de la
      * feuille serait arrondi, et le dégradé de flexion — qui est ce qui rend
      * le bord VISIBLE — garderait ses coins carrés par-dessus.
      */
-    borderRadius: radius.md,
+    borderTopLeftRadius: radius.md,
+    borderTopRightRadius: radius.md,
     overflow: 'hidden',
     /**
      * Une ombre plutôt qu'un contour — demande de Jonathan, 6 août 2026.

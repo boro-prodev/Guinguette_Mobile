@@ -84,10 +84,12 @@ bande sombre**, ce qui se lit comme un liseré sale, pas comme du papier. La
 feuille qui bouge est la seule à porter un assombrissement. Ne rien remettre en
 dessous — le brief d'origine demandait cette ombre, l'écran a tranché contre.
 
-**La feuille a les angles arrondis** (`radius.md`, le même cran que les affiches
-et les panneaux qu'elle contient), avec `overflow: 'hidden'` — sans lui, seul le
-fond serait arrondi et le dégradé de flexion garderait ses coins carrés
-par-dessus.
+**La feuille a les angles du HAUT arrondis** (`radius.md`, le même cran que les
+affiches et les panneaux qu'elle contient), avec `overflow: 'hidden'` — sans
+lui, seul le fond serait arrondi et le dégradé de flexion garderait ses coins
+carrés par-dessus. **Pas le bas** (retouché le 6 août 2026) : la feuille touche
+la barre d'onglets en son pied (`styles.frame` épouse exactement la hauteur
+entre l'en-tête et la barre), un arrondi bas ne s'y serait jamais vu.
 
 **Et elle porte une ombre permanente** (`shadows.card`, la même que `Pane` et
 les panneaux de La Carte) plutôt qu'un contour — demande de Jonathan, 6 août

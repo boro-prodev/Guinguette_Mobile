@@ -153,6 +153,10 @@ const styles = StyleSheet.create({
     // la détache des bords de l'écran. Sans celle-ci, l'affiche et les
     // panneaux toucheraient les angles arrondis de la feuille.
     paddingHorizontal: spacing.gutter,
+    // Léger, demande de Jonathan, 6 août 2026 : sans lui, le kicker « À
+    // l'affiche » démarrait à 0, collé au bord haut désormais arrondi de la
+    // feuille (voir `NewspaperPager.tsx` → `styles.sheet`).
+    paddingTop: spacing.sm,
     paddingBottom: spacing.lg,
   },
 });
