@@ -87,7 +87,7 @@ import Animated, {
   type SharedValue,
 } from 'react-native-reanimated';
 
-import { colors } from '@/constants/theme';
+import { colors, radius } from '@/constants/theme';
 
 /**
  * Tous les réglages du feuilletage, au même endroit — c'est ici qu'on ajuste
@@ -114,16 +114,20 @@ export const TURN = {
   minScale: 0.98,
   /** Soulèvement vertical de la feuille (px) : elle décolle un peu du plan. */
   lift: 6,
-  /** Opacité maximale de l'ombre projetée sur la page du dessous. */
-  shadowOpacity: 0.45,
-  /** Largeur (px) de la bande d'ombre, au bord du pli. */
-  shadowWidth: 32,
-  /** Assombrissement du bord meneur de la feuille — la flexion du papier. */
+  /**
+   * Assombrissement du bord meneur de la feuille — la flexion du papier.
+   *
+   * ⚠️ **C'est le seul assombrissement du feuilletage, et il vit sur la
+   * feuille qui BOUGE.** Il y en avait deux autres, tous deux posés sur la
+   * page qu'on découvre : une ombre portée au bord du pli et un voile général.
+   * Retirés le 6 août 2026 après regard de Jonathan — la page suivante
+   * apparaissait cernée d'une bande sombre, ce qui se lit comme un liseré sale
+   * plutôt que comme du papier. **Ne rien remettre sur la page du dessous :
+   * elle se découvre propre, à sa vraie couleur.**
+   */
   foldOpacity: 0.3,
   /** Part de la largeur sur laquelle cette flexion se dissipe. */
   foldSpread: 0.45,
-  /** Voile sur la page révélée, qui se dissipe à mesure qu'elle sort de l'ombre. */
-  revealVeil: 0.18,
   /** Retour en place quand le seuil n'a pas été franchi. */
   spring: { damping: 20, stiffness: 210, mass: 0.9 },
   /**
@@ -414,14 +418,6 @@ function Sheet({
     };
   });
 
-  /** Le voile de la page qu'on découvre : elle sort de l'ombre, elle n'apparaît pas. */
-  const veilStyle = useAnimatedStyle(() => ({
-    opacity:
-      !isTop && revealIndex.value === position
-        ? (1 - Math.abs(progress.value)) * TURN.revealVeil
-        : 0,
-  }));
-
   return (
     <Animated.View
       /**
@@ -451,9 +447,8 @@ function Sheet({
         {children}
       </ScrollView>
 
-      <Animated.View pointerEvents="none" style={[styles.overlay, styles.veil, veilStyle]} />
-
-      {/* Ombre et flexion n'existent que sur la feuille qui bouge. */}
+      {/* La flexion n'existe que sur la feuille qui bouge — jamais sur celle
+          qu'on découvre, qui se montre à sa vraie couleur. */}
       {isTop && (
         <>
           <Fold side="left" progress={progress} />
@@ -465,23 +460,22 @@ function Sheet({
 }
 
 /**
- * Les deux calques de papier d'un côté de la feuille, actifs seulement quand
- * elle part de ce côté-là :
- * - l'**ombre portée** au-delà du bord libre, qui tombe sur la page du dessous ;
- * - la **flexion** du bord meneur, qui s'enfonce dans la perspective et
- *   s'assombrit.
+ * La **flexion** du bord meneur de la feuille : la partie qui s'enfonce dans
+ * la perspective s'assombrit, comme une feuille qu'on plie. Un calque par
+ * côté, actif seulement quand la feuille part de ce côté-là.
  *
  * `side` est le bord **libre**, celui qui se soulève : à droite quand la
- * feuille part vers la gauche.
+ * feuille part vers la gauche. Le dégradé, lui, part du bord opposé.
+ *
+ * ⚠️ **Ce calque vit sur la feuille qui bouge, et il n'a plus de pendant sur
+ * la page du dessous.** Il y avait ici une seconde vue, `castShadow` : une
+ * bande sombre posée juste au-delà du bord libre, donc **sur** la page qu'on
+ * découvre. Retirée le 6 août 2026 — à l'écran, la page suivante apparaissait
+ * cernée d'un liseré sombre, plus salissant que réaliste.
  */
 function Fold({ side, progress }: { side: 'left' | 'right'; progress: SharedValue<number> }) {
   // Feuille qui part à gauche → progression négative → bord libre à droite.
   const sign = side === 'right' ? -1 : 1;
-
-  const shadowStyle = useAnimatedStyle(() => {
-    const amount = progress.value * sign;
-    return { opacity: (amount > 0 ? amount : 0) * TURN.shadowOpacity };
-  });
 
   const foldStyle = useAnimatedStyle(() => {
     const amount = progress.value * sign;
@@ -489,46 +483,23 @@ function Fold({ side, progress }: { side: 'left' | 'right'; progress: SharedValu
   });
 
   return (
-    <>
-      <Animated.View
-        pointerEvents="none"
-        style={[
-          styles.castShadow,
-          side === 'right' ? { left: '100%' } : { right: '100%' },
-          shadowStyle,
-        ]}
-      >
-        <LinearGradient
-          colors={
-            side === 'right'
-              ? [colors.duskShade, colors.duskFade]
-              : [colors.duskFade, colors.duskShade]
-          }
-          start={{ x: 0, y: 0.5 }}
-          end={{ x: 1, y: 0.5 }}
-          style={StyleSheet.absoluteFill}
-        />
-      </Animated.View>
-
-      {/* Le bord meneur est l'opposé du bord libre : le dégradé part de là. */}
-      <Animated.View pointerEvents="none" style={[styles.overlay, foldStyle]}>
-        <LinearGradient
-          colors={[colors.duskShade, colors.duskFade]}
-          locations={[0, TURN.foldSpread]}
-          start={side === 'right' ? { x: 0, y: 0.5 } : { x: 1, y: 0.5 }}
-          end={side === 'right' ? { x: 1, y: 0.5 } : { x: 0, y: 0.5 }}
-          style={StyleSheet.absoluteFill}
-        />
-      </Animated.View>
-    </>
+    <Animated.View pointerEvents="none" style={[styles.overlay, foldStyle]}>
+      <LinearGradient
+        colors={[colors.duskShade, colors.duskFade]}
+        locations={[0, TURN.foldSpread]}
+        start={side === 'right' ? { x: 0, y: 0.5 } : { x: 1, y: 0.5 }}
+        end={side === 'right' ? { x: 1, y: 0.5 } : { x: 0, y: 0.5 }}
+        style={StyleSheet.absoluteFill}
+      />
+    </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
   frame: {
     flex: 1,
-    // Le cadre coupe ce qui dépasse : c'est lui qui fait exister le bord de
-    // la feuille, et qui masque l'ombre portée au repos.
+    // Le cadre coupe ce qui dépasse : c'est lui qui fait exister le bord de la
+    // feuille pendant qu'elle sort.
     overflow: 'hidden',
   },
   sheet: {
@@ -539,6 +510,21 @@ const styles = StyleSheet.create({
     bottom: 0,
     // Opaque, sans quoi on verrait la feuille du dessous par transparence.
     backgroundColor: colors.background,
+    /**
+     * Les angles de la feuille, arrondis — demande de Jonathan, 6 août 2026 :
+     * une feuille aux coins vifs faisait moins « léché » dès qu'on la
+     * glissait. `radius.md` est le même cran que les affiches et les panneaux
+     * qu'elle contient, donc un arrondi discret plutôt qu'une carte à jouer.
+     *
+     * `overflow: 'hidden'` n'est pas facultatif : sans lui, seul le fond de la
+     * feuille serait arrondi, et le dégradé de flexion — qui est ce qui rend
+     * le bord VISIBLE — garderait ses coins carrés par-dessus.
+     *
+     * Au repos, l'arrondi ne se voit pas : la feuille couvre tout le cadre et
+     * ses coins laissent passer un fond de la même couleur qu'elle.
+     */
+    borderRadius: radius.md,
+    overflow: 'hidden',
   },
   overlay: {
     position: 'absolute',
@@ -546,14 +532,5 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-  },
-  veil: {
-    backgroundColor: colors.duskDeep,
-  },
-  castShadow: {
-    position: 'absolute',
-    top: 0,
-    bottom: 0,
-    width: TURN.shadowWidth,
   },
 });

@@ -73,9 +73,23 @@ sur le thread UI ne le serait pas — `zIndex` passe par le circuit de commit et
 *page curl* demanderait un maillage déformable ou un shader (React Native
 Skia), module natif absent d'Expo Go. Le pli se compose donc de : perspective,
 rotation autour du bord meneur (obtenue par un trio `+pivot / rotateY / −pivot`,
-`transformOrigin` n'étant pas animable), ombre portée au bord libre, dégradé de
-flexion, et voile sur la page révélée. Si le rendu doit aller plus loin, ce sera
-par calques.
+`transformOrigin` n'étant pas animable), et un dégradé de flexion qui assombrit
+ce bord meneur. Si le rendu doit aller plus loin, ce sera par calques.
+
+⚠️ **Rien ne s'assombrit sur la page qu'on découvre.** Il y avait deux calques
+pour ça — une ombre portée au bord du pli, qui tombait sur elle, et un voile
+général qui se dissipait à mesure qu'elle sortait. Les deux ont sauté le 6 août
+2026 après regard de Jonathan : la page suivante apparaissait **cernée d'une
+bande sombre**, ce qui se lit comme un liseré sale, pas comme du papier. La
+feuille qui bouge est la seule à porter un assombrissement. Ne rien remettre en
+dessous — le brief d'origine demandait cette ombre, l'écran a tranché contre.
+
+**La feuille a les angles arrondis** (`radius.md`, le même cran que les affiches
+et les panneaux qu'elle contient), avec `overflow: 'hidden'` — sans lui, seul le
+fond serait arrondi et le dégradé de flexion garderait ses coins carrés
+par-dessus. L'arrondi ne se lit que là où le bord de la feuille passe sur un
+contenu contrasté (une photo de la page du dessous) : entre deux fonds crème, il
+reste invisible, et c'est normal.
 
 **Le feuilletage boucle** (la dernière page ramène à la première), donc pas de
 butée ni de résistance aux bords — le jour où l'on passerait en butée, la

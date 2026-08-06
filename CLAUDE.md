@@ -75,7 +75,7 @@ automatiquement selon l'intention (`.claude/skills/environnement/`).
 | `tamagui.config.ts` | Expose `theme.ts` à Tamagui : tokens, polices, thèmes d'accent, animations |
 | `components/ui/Button.tsx` | **LE bouton de l'app** — un seul objet, décliné par thème |
 | `components/ui/PressableScale.tsx` | Zone tactile brute — **pas** un bouton |
-| `components/features/NewspaperPager.tsx` | **Le feuilletage de Soirées** — une page entière tourne comme une feuille de journal : geste, perspective, pli, ombre portée. Générique et réutilisable ; tous ses réglages dans l'objet `TURN` |
+| `components/features/NewspaperPager.tsx` | **Le feuilletage de Soirées** — une page entière tourne comme une feuille de journal : geste, perspective, pli. Générique et réutilisable ; tous ses réglages dans l'objet `TURN` |
 | `components/features/SpotlightParts.tsx` | L'habillage commun aux deux sections de Soirées (cadre d'affiche, titraille, panneau à ombre, pastilles). **Aucune mécanique** — le carrousel qu'il portait a été retiré |
 | `components/features/EventSpotlight.tsx` / `EventDetailPane.tsx` | « À l'affiche » : la soirée de la page — affiche, description, programme, jauge, tarif, bouton « Participer » |
 | `components/features/ArtistSpotlight.tsx` / `ArtistDetailPane.tsx` | « Artist Spot » : l'artiste de **cette même soirée** (`data/artists.ts`, relié par `eventId`) — bio, style musical, liens site/réseaux sociaux |
