@@ -2,6 +2,26 @@
  * La Carte — DÉMO : plats, descriptions et prix sont des placeholders.
  * La carte est modélisée en « blocs » pour que l'écran puisse la rendre dans
  * une FlatList unique et la filtrer par catégorie sans démonter la mise en page.
+ *
+ * ## Une catégorie = une suggestion, puis une liste
+ *
+ * Chaque catégorie tient en **deux blocs**, et toujours dans cet ordre :
+ *
+ * 1. un `feature` — le produit mis en avant, en grande photo, avec son badge
+ *    « Suggestion de saison » et sa description qui se déplie ;
+ * 2. un `list` — tout le reste, en lignes nom / description / prix, **sans
+ *    image**.
+ *
+ * ⚠️ **Il n'y a plus de filtre « Tout »** (6 août 2026) : on entre sur
+ * « À partager », et on ne voit jamais qu'une catégorie à la fois. Deux formes
+ * de blocs ont disparu avec ce remaniement, parce que plus aucune donnée ne
+ * les utilisait :
+ * - `heading`, l'intertitre pleine largeur qui annonçait « Plats Principaux » —
+ *   c'est le titre de la liste qui le porte maintenant, comme pour les autres
+ *   catégories ;
+ * - `photo`, le plat illustré **sans** badge : les deux plats qui l'utilisaient
+ *   sont redescendus en lignes de liste. Une seule photo par catégorie, c'est
+ *   ce qui fait qu'elle met quelque chose en avant.
  */
 import type { ImageSourcePropType } from 'react-native';
 
@@ -17,10 +37,9 @@ const eur = (amount: string) => `${amount}${NBSP}€`;
 
 export type MenuCategory = 'partager' | 'plats' | 'desserts' | 'boissons';
 
-export type MenuFilter = 'tout' | MenuCategory;
-
-export const MENU_FILTERS: { id: MenuFilter; label: string }[] = [
-  { id: 'tout', label: 'Tout' },
+/** L'ordre de cette liste est celui des puces — et la première est celle sur
+ *  laquelle l'écran s'ouvre. */
+export const MENU_FILTERS: { id: MenuCategory; label: string }[] = [
   { id: 'partager', label: 'À partager' },
   { id: 'plats', label: 'Plats' },
   { id: 'desserts', label: 'Desserts' },
@@ -47,22 +66,6 @@ export type MenuBlock =
       price: string;
     }
   | {
-      kind: 'photo';
-      id: string;
-      category: MenuCategory;
-      image: ImageSourcePropType;
-      alt: string;
-      title: string;
-      description: string;
-      price: string;
-    }
-  | {
-      kind: 'heading';
-      id: string;
-      category: MenuCategory;
-      title: string;
-    }
-  | {
       kind: 'list';
       id: string;
       category: MenuCategory;
@@ -71,18 +74,20 @@ export type MenuBlock =
       items: MenuItem[];
     };
 
+const SUGGESTION = 'Suggestion de saison';
+
 export const menuBlocks: MenuBlock[] = [
   {
     kind: 'feature',
-    id: 'toasts-saumon',
+    id: 'planche-mixte',
     category: 'partager',
-    image: require('../assets/images/nourriture-6.jpeg'),
-    alt: 'Toasts de saumon fumé, roquette et tomates confites',
-    badge: 'Suggestion de saison',
-    title: 'Toasts de Saumon Fumé',
+    image: require('../assets/images/planche-charcuterie-fromage.png'),
+    alt: 'Planche de charcuteries locales et de fromages affinés',
+    badge: SUGGESTION,
+    title: 'Planche Mixte',
     description:
-      'Pain de campagne grillé, saumon fumé, roquette, crème acidulée, tomates cerises et balsamique.',
-    price: eur('14'),
+      'Charcuteries locales, fromages affinés de la région, pickles maison et pain de campagne grillé.',
+    price: eur('18'),
   },
   {
     kind: 'list',
@@ -92,16 +97,16 @@ export const menuBlocks: MenuBlock[] = [
     title: 'À partager',
     items: [
       {
-        id: 'planche-mixte',
-        name: 'Planche Mixte',
-        description: 'Charcuteries locales & fromages',
-        price: eur('18'),
-      },
-      {
         id: 'fritures-eperlans',
         name: 'Fritures d’Éperlans',
         description: 'Sauce tartare maison',
         price: eur('9'),
+      },
+      {
+        id: 'croquettes-crevettes',
+        name: 'Croquettes de Crevettes Grises',
+        description: 'Persil frit, quartier de citron',
+        price: eur('11'),
       },
       {
         id: 'camembert-roti',
@@ -112,38 +117,36 @@ export const menuBlocks: MenuBlock[] = [
     ],
   },
   {
-    kind: 'heading',
-    id: 'plats-heading',
+    kind: 'feature',
+    id: 'toasts-saumon',
     category: 'plats',
-    title: 'Plats Principaux',
-  },
-  {
-    kind: 'photo',
-    id: 'salade-guinguette',
-    category: 'plats',
-    image: require('../assets/images/nourriture-1.jpeg'),
-    alt: 'Salade composée : magret fumé, fruits et roquette',
-    title: 'Salade Guinguette',
+    image: require('../assets/images/nourriture-6.jpeg'),
+    alt: 'Toasts de saumon fumé, roquette et tomates confites',
+    badge: SUGGESTION,
+    title: 'Toasts de Saumon Fumé',
     description:
-      'Magret fumé, quartiers de figues, tomates confites, roquette, vinaigrette au miel.',
-    price: eur('16'),
-  },
-  {
-    kind: 'photo',
-    id: 'cassolette-pecheur',
-    category: 'plats',
-    image: require('../assets/images/nourriture-2.jpeg'),
-    alt: 'Cassolette du pêcheur servie dans son ramequin',
-    title: 'Cassolette du Pêcheur',
-    description:
-      'Poisson frais du jour, pommes de terre grenailles, tomates cerises, petite salade.',
-    price: eur('19'),
+      'Pain de campagne grillé, saumon fumé, roquette, crème acidulée, tomates cerises et balsamique.',
+    price: eur('14'),
   },
   {
     kind: 'list',
     id: 'plats-liste',
     category: 'plats',
+    icon: 'menu',
+    title: 'Plats Principaux',
     items: [
+      {
+        id: 'salade-guinguette',
+        name: 'Salade Guinguette',
+        description: 'Magret fumé, figues, roquette, miel',
+        price: eur('16'),
+      },
+      {
+        id: 'cassolette-pecheur',
+        name: 'Cassolette du Pêcheur',
+        description: 'Poisson du jour, grenailles, petite salade',
+        price: eur('19'),
+      },
       {
         id: 'burger-rustique',
         name: 'Burger Rustique',
@@ -171,6 +174,18 @@ export const menuBlocks: MenuBlock[] = [
     ],
   },
   {
+    kind: 'feature',
+    id: 'cafe-gourmand',
+    category: 'desserts',
+    image: require('../assets/images/cafe-gourmand.png'),
+    alt: 'Café gourmand : expresso, part de gâteau au chocolat, croissant et confiture',
+    badge: SUGGESTION,
+    title: 'Café Gourmand',
+    description:
+      'Un expresso de torréfaction artisanale et son trio de douceurs : part de gâteau au chocolat, croissant tiède et confiture maison.',
+    price: eur('9'),
+  },
+  {
     kind: 'list',
     id: 'desserts',
     category: 'desserts',
@@ -190,18 +205,24 @@ export const menuBlocks: MenuBlock[] = [
         price: eur('7'),
       },
       {
-        id: 'cafe-gourmand',
-        name: 'Café Gourmand',
-        description: 'Trio de mignardises maison',
-        price: eur('9'),
-      },
-      {
         id: 'coupe-glacee',
         name: 'Coupe Glacée',
         description: 'Glaces artisanales, chantilly',
         price: eur('6'),
       },
     ],
+  },
+  {
+    kind: 'feature',
+    id: 'deglinguette',
+    category: 'boissons',
+    image: require('../assets/images/boisson-deglinguette.png'),
+    alt: 'La Déglinguette, bouteille de cidre rosé artisanal sur une table en bois',
+    badge: SUGGESTION,
+    title: 'La Déglinguette',
+    description:
+      'La bouteille de la maison : cidre rosé artisanal du Viroin, peu sucré, légèrement pétillant, servi très frais.',
+    price: eur('5'),
   },
   {
     kind: 'list',

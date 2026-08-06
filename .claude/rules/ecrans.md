@@ -144,13 +144,28 @@ avant le contenu : `elevation` n'est pas porté par l'animation d'opacité de
 « saute » au lieu de suivre le fondu. Garder `Pane` stable et ne remonter que
 le contenu referme le trou.
 
-## La Carte : seuls les plats illustrés se replient
+## La Carte : une suggestion illustrée, puis une liste
 
-`MenuBlockView` rend quatre formes de blocs ; **deux seulement se replient**,
-`feature` et `photo`. Repliés, ils montrent image, titre et prix ; la
-description n'apparaît qu'au toucher. Les listes de prix (`list`) et les
-intertitres (`heading`) ne bougent pas — déjà compacts, et sans image à mettre
-en avant.
+⚠️ **Il n'y a plus de filtre « Tout »** (6 août 2026) : on entre sur
+« À partager », et on ne voit **jamais qu'une catégorie à la fois**. Chacune
+tient en deux blocs, toujours dans cet ordre — un `feature` (la suggestion, en
+grande photo, badge « Suggestion de saison », description qui se déplie) puis un
+`list` (tout le reste, en lignes nom / description / prix, **sans image**).
+
+`MenuBlockView` ne rend donc plus que ces deux formes. `heading` (l'intertitre
+pleine largeur) et `photo` (le plat illustré sans badge) ont disparu avec ce
+remaniement : plus aucune donnée ne les utilisait. **Une seule photo par
+catégorie** — c'est ce qui fait qu'elle met quelque chose en avant.
+
+**Seule la suggestion se replie.** Repliée, elle montre image, titre et prix ;
+la description n'apparaît qu'au toucher. Les listes de prix ne bougent pas —
+déjà compactes, et sans image à mettre en avant.
+
+⚠️ **Le titre d'une liste porte `numberOfLines={1}` et `flex: 1`.** Sans eux,
+Android mesure mal ce `Text` en Berkshire Swash et coupait « À partager » à son
+seul « À », en silence — exactement le défaut de l'accroche de l'écran Soirées.
+Le réflexe vaut pour **tout** titre court en police d'affichage posé dans une
+rangée `flexDirection: 'row'`.
 
 - **Le signal de dépliage est une pastille ronde en bas à droite de la photo**,
   chevron pivotant de 180° à l'ouverture. C'est le seul coin libre : le badge
@@ -167,6 +182,12 @@ en avant.
 - L'ouverture **fond** la description ; la hauteur, elle, saute. Choix assumé —
   une `LinearTransition` lisserait le mouvement mais les animations de layout
   dans une `FlatList` sont un nid à saccades.
+- ⚠️ **La valeur partagée du chevron s'écrit dans le gestionnaire, jamais dans
+  la fonction de mise à jour de `setExpanded`.** React exécute cette
+  fonction-là **pendant le rendu** (deux fois en mode strict) : Reanimated 4 le
+  signalait à chaque repli (« Writing to `value` during component render »), et
+  l'animation risquait d'être jouée deux fois ou perdue. Corrigé le 6 août
+  2026 ; le prix est que `toggle` dépend d'`expanded`, ce qui ne coûte rien.
 
 ## Le bouton flottant de La Carte
 

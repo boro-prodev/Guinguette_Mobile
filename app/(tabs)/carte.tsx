@@ -23,7 +23,7 @@ import { Button } from '@/components/ui/Button';
 import { Chip } from '@/components/ui/Chip';
 import { Reveal } from '@/components/ui/Reveal';
 import { colors, fonts, radius, shadows, spacing, type } from '@/constants/theme';
-import { MENU_FILTERS, menuBlocks, type MenuBlock, type MenuFilter } from '@/data/menu';
+import { MENU_FILTERS, menuBlocks, type MenuBlock, type MenuCategory } from '@/data/menu';
 import { useReserve } from '@/features/reserve/ReserveProvider';
 
 /**
@@ -39,7 +39,10 @@ const FADE_MS = 200;
 const CTA_CLEARANCE = 96;
 
 export default function CarteScreen() {
-  const [filter, setFilter] = useState<MenuFilter>('tout');
+  // On entre sur la première puce, « À partager » — il n'y a plus de « Tout »
+  // (6 août 2026) : on ne voit jamais qu'une catégorie à la fois, chacune
+  // ouverte par sa suggestion illustrée.
+  const [filter, setFilter] = useState<MenuCategory>(MENU_FILTERS[0]!.id);
   const { open } = useReserve();
 
   /**
@@ -52,12 +55,9 @@ export default function CarteScreen() {
   const shown = useSharedValue(0);
   const [reachable, setReachable] = useState(false);
 
-  const blocks = useMemo(
-    () => (filter === 'tout' ? menuBlocks : menuBlocks.filter((b) => b.category === filter)),
-    [filter]
-  );
+  const blocks = useMemo(() => menuBlocks.filter((b) => b.category === filter), [filter]);
 
-  const handleFilter = useCallback((value: string) => setFilter(value as MenuFilter), []);
+  const handleFilter = useCallback((value: string) => setFilter(value as MenuCategory), []);
 
   const renderItem = useCallback<ListRenderItem<MenuBlock>>(
     ({ item }) => <MenuBlockView block={item} />,

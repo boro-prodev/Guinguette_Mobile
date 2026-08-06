@@ -1,12 +1,17 @@
 /**
- * Rendu d'un bloc de La Carte. Les quatre formes (plat vedette, plat en photo,
- * intertitre, liste de prix) sont rendues par un seul composant mémoïsé pour
- * que la FlatList de l'écran reste homogène et filtrable.
+ * Rendu d'un bloc de La Carte. Les deux formes (la suggestion illustrée, la
+ * liste de prix) sont rendues par un seul composant mémoïsé pour que la
+ * FlatList de l'écran reste homogène et filtrable.
  *
- * **Seuls les plats illustrés se replient** (chantier 3). Repliés, ils montrent
- * image, titre et prix ; la description n'apparaît qu'au toucher. Les listes de
- * prix (Boissons, Desserts…) ne bougent pas : elles sont déjà compactes et
- * n'ont pas d'image à mettre en avant.
+ * **Seule la suggestion se replie** (chantier 3). Repliée, elle montre image,
+ * titre et prix ; la description n'apparaît qu'au toucher. Les listes de prix
+ * ne bougent pas : elles sont déjà compactes et n'ont pas d'image à mettre en
+ * avant.
+ *
+ * ⚠️ Il y avait quatre formes jusqu'au 6 août 2026. `heading` (l'intertitre
+ * pleine largeur) et `photo` (le plat illustré sans badge) ont disparu avec le
+ * remaniement de `data/menu.ts` : plus aucune donnée ne les utilisait, une
+ * catégorie ne portant plus qu'une seule photo — celle de sa suggestion.
  */
 import { Image } from 'expo-image';
 import { memo, useCallback, useState } from 'react';
@@ -44,37 +49,43 @@ const PriceRow = memo(function PriceRow({ item, last }: { item: MenuItem; last: 
 });
 
 /**
- * Un plat illustré, repliable. Composant à part entière — et pas une branche de
- * `MenuBlockComponent` — parce qu'il porte des hooks : les intertitres et les
- * listes de prix n'ont ainsi rien à monter pour rien.
+ * La suggestion de la catégorie : un plat illustré, repliable. Composant à part
+ * entière — et pas une branche de `MenuBlockComponent` — parce qu'il porte des
+ * hooks : les listes de prix n'ont ainsi rien à monter pour rien.
  *
  * Le signal de dépliage est une **pastille ronde posée en bas à droite de la
  * photo**, dont le chevron pivote à l'ouverture. Ce coin-là est le seul libre :
- * le badge « Suggestion de saison » d'un plat vedette occupe le haut à droite,
- * et le prix occupe la ligne du titre. Il fallait l'inventer — le chevron du
- * chantier 2, que la feuille de route proposait de réutiliser, n'existe plus
- * depuis que le panneau de Soirées reste ouvert en permanence.
+ * le badge « Suggestion de saison » occupe le haut à droite, et le prix occupe
+ * la ligne du titre. Il fallait l'inventer — le chevron du chantier 2, que la
+ * feuille de route proposait de réutiliser, n'existe plus depuis que le panneau
+ * de Soirées reste ouvert en permanence.
  */
-function DishCard({ block }: { block: Extract<MenuBlock, { kind: 'feature' | 'photo' }> }) {
+function DishCard({ block }: { block: Extract<MenuBlock, { kind: 'feature' }> }) {
   const [expanded, setExpanded] = useState(false);
   const turn = useSharedValue(0);
 
+  /**
+   * ⚠️ **La valeur partagée s'écrit ici, pas dans la fonction de mise à jour de
+   * `setExpanded`.** C'est là qu'elle était, et Reanimated 4 le signalait à
+   * chaque repli : « Writing to `value` during component render ». React
+   * exécute la fonction passée à un `setState` **pendant le rendu** (et deux
+   * fois en mode strict), donc écrire une valeur partagée dedans revient à
+   * lancer une animation en plein rendu — au mieux jouée deux fois, au pire
+   * perdue. Le prix est de dépendre d'`expanded` : `toggle` se recrée à chaque
+   * bascule, ce qui ne coûte rien ici.
+   */
   const toggle = useCallback(() => {
-    setExpanded((current) => {
-      const next = !current;
-      turn.value = withTiming(next ? 1 : 0, {
-        duration: CHEVRON_MS,
-        reduceMotion: ReduceMotion.System,
-      });
-      return next;
+    const next = !expanded;
+    setExpanded(next);
+    turn.value = withTiming(next ? 1 : 0, {
+      duration: CHEVRON_MS,
+      reduceMotion: ReduceMotion.System,
     });
-  }, [turn]);
+  }, [expanded, turn]);
 
   const chevronStyle = useAnimatedStyle(() => ({
     transform: [{ rotate: `${turn.value * 180}deg` }],
   }));
-
-  const featured = block.kind === 'feature';
 
   return (
     <PressableScale
@@ -88,7 +99,7 @@ function DishCard({ block }: { block: Extract<MenuBlock, { kind: 'feature' | 'ph
       accessibilityHint={expanded ? 'Toucher pour replier' : 'Toucher pour lire la description'}
       accessibilityState={{ expanded }}
     >
-      <View style={featured ? styles.featureImageWrapper : styles.photoImageWrapper}>
+      <View style={styles.imageWrapper}>
         <Image
           source={block.image}
           style={styles.image}
@@ -98,12 +109,10 @@ function DishCard({ block }: { block: Extract<MenuBlock, { kind: 'feature' | 'ph
           transition={250}
           cachePolicy="memory-disk"
         />
-        {featured && (
-          <View style={styles.badge}>
-            <Icon name="star" size={14} color={colors.onTertiaryFixed} />
-            <Text style={styles.badgeLabel}>{block.badge}</Text>
-          </View>
-        )}
+        <View style={styles.badge}>
+          <Icon name="star" size={14} color={colors.onTertiaryFixed} />
+          <Text style={styles.badgeLabel}>{block.badge}</Text>
+        </View>
 
         <View style={styles.revealBadge}>
           <Animated.View style={chevronStyle}>
@@ -131,17 +140,19 @@ function DishCard({ block }: { block: Extract<MenuBlock, { kind: 'feature' | 'ph
 }
 
 function MenuBlockComponent({ block }: { block: MenuBlock }) {
-  if (block.kind === 'heading') {
-    return <Text style={styles.heading}>{block.title}</Text>;
-  }
-
   if (block.kind === 'list') {
     return (
       <View style={[styles.card, shadows.card]}>
         {block.title && (
           <View style={styles.listHeader}>
             {block.icon && <Icon name={block.icon} size={22} color={colors.primary} />}
-            <Text style={styles.listTitle}>{block.title}</Text>
+            {/* `numberOfLines={1}` et le `flex` ne sont pas cosmétiques : sans
+                eux, Android mesure mal ce `Text` en Berkshire Swash et coupait
+                « À partager » à son seul « À », en silence — même défaut que
+                l'accroche de l'écran Soirées. */}
+            <Text style={styles.listTitle} numberOfLines={1}>
+              {block.title}
+            </Text>
           </View>
         )}
         {block.items.map((item, index) => (
@@ -162,13 +173,6 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     overflow: 'hidden',
   },
-  heading: {
-    ...type.headlineLg,
-    color: colors.onSurface,
-    textAlign: 'center',
-    marginTop: spacing.md,
-  },
-
   /* Listes de prix */
   listHeader: {
     flexDirection: 'row',
@@ -181,6 +185,7 @@ const styles = StyleSheet.create({
   listTitle: {
     ...type.headlineMd,
     color: colors.primary,
+    flex: 1,
   },
   row: {
     flexDirection: 'row',
@@ -213,13 +218,9 @@ const styles = StyleSheet.create({
     color: colors.onSurface,
   },
 
-  /* Plats illustrés */
-  featureImageWrapper: {
+  /* La suggestion illustrée */
+  imageWrapper: {
     height: 224,
-    width: '100%',
-  },
-  photoImageWrapper: {
-    height: 192,
     width: '100%',
   },
   image: {

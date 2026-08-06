@@ -20,6 +20,20 @@ garder plausibles et en français.
 **Elles sont centralisées dans `data/`** — adapter la démo pour un prospect
 consiste à éditer `menu.ts`, `events.ts`, `venue.ts`, **jamais les écrans**.
 
+## `data/menu.ts` : une catégorie = une suggestion, puis une liste
+
+Chaque catégorie tient en **deux blocs**, et toujours dans cet ordre : un
+`feature` (le produit mis en avant, en grande photo, badge « Suggestion de
+saison ») puis un `list` (tout le reste, sans image). Ajouter une catégorie,
+c'est ajouter ces deux blocs **et** sa puce dans `MENU_FILTERS` — dont l'ordre
+est celui des puces à l'écran, la **première** étant celle sur laquelle l'écran
+s'ouvre.
+
+⚠️ **La description d'une suggestion doit décrire sa photo.** Elles sont
+placeholder, mais elles se lisent côte à côte : une « bière blonde » sous une
+bouteille de cidre rosé se voit immédiatement en démo (rencontré le 6 août
+2026).
+
 ## `data/events.ts` : `startsAt` est la source, tout le reste en découle
 
 C'est une vraie `Date` (jour *et* heure) qui alimente le compte à rebours. Le
