@@ -66,6 +66,22 @@ export default function TabsLayout() {
   return (
     <Tabs
       screenOptions={{
+        /**
+         * ⚠️ **Les quatre onglets sont montés dès le démarrage, pas au
+         * premier tap.** Par défaut (`lazy: true`), un onglet jamais visité
+         * ne monte son écran qu'à la première fois qu'on l'ouvre — et ce
+         * montage (mise en page, premières peintures, dont les cartes à
+         * ombre de Soirées et d'Infos) tombe alors EN MÊME TEMPS que la
+         * transition d'entrée. Jonathan, 6 août 2026 : « la navigation entre
+         * l'accueil et la carte […] c'est top, mais […] soirée et infos […]
+         * on voit clairement les boîtes avec leur ombre avant que l'on soit
+         * sur la page ». Accueil et La Carte étaient déjà chauds (visités
+         * plus tôt dans la même session) : rien à monter, la transition
+         * anime une scène déjà complète. `lazy: false` monte les quatre au
+         * démarrage — le ressort et le glissement, eux, ne bougent pas, ils
+         * convenaient déjà.
+         */
+        lazy: false,
         header: () => <AppHeader />,
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.onSurfaceVariant,

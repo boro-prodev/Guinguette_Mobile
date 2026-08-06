@@ -16,6 +16,19 @@ Header, barre d'onglets et transition (`sceneStyleInterpolator` +
 `transitionSpec`) sont définis dans **`app/(tabs)/_layout.tsx`** — source
 unique. Toute modification de navigation se fait là.
 
+⚠️ **Les quatre onglets sont montés dès le démarrage** (`lazy: false` dans
+`screenOptions`), pas au premier tap sur chacun. Par défaut, un onglet jamais
+visité ne monte son écran qu'à sa première ouverture — et ce montage tombe
+alors **en même temps que la transition d'entrée**. Repéré par Jonathan le
+6 août 2026 : Accueil ↔ La Carte (déjà chauds, visités plus tôt dans la
+session) transitionnaient bien, mais Soirées et Infos (jamais visités)
+laissaient voir « les boîtes avec leur ombre » se poser pendant la
+transition — le montage initial de leurs cartes (`shadows.card`) et la
+transition de la scène tombaient sur la même image. `lazy: false` mène les
+quatre à égalité : plus rien à monter au premier tap, la transition anime
+toujours une scène déjà complète. Le ressort et le glissement eux-mêmes
+n'ont pas changé — ils convenaient déjà.
+
 ⚠️ **Il n'y a plus de swipe au doigt entre onglets** — la barre d'onglets se
 tape, c'est tout. Il y en a eu un (`SwipeTabsArea`,
 `components/layout/SwipeTabs.tsx`, geste `Gesture.Pan()` enveloppant chaque
