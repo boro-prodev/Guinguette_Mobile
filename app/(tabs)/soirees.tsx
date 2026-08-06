@@ -31,7 +31,7 @@ import {
 } from '@/components/features/NewspaperPager';
 import { DotBar, DotTarget } from '@/components/features/SpotlightParts';
 import { Reveal } from '@/components/ui/Reveal';
-import { colors, spacing, type } from '@/constants/theme';
+import { colors, spacing, tabularNums, type } from '@/constants/theme';
 import { artists } from '@/data/artists';
 import { events, type GuinguetteEvent } from '@/data/events';
 import type { Artist } from '@/data/artists';
@@ -83,6 +83,12 @@ export default function SoireesScreen() {
               </DotTarget>
             ))}
           </XStack>
+          {/* Demande de Jonathan, 6 août 2026 : un indicateur plus marquant que
+              la seule rangée de pastilles — trop discrète pour dire d'un coup
+              d'œil « où on en est ». Le chiffre, lui, ne laisse aucun doute.
+              `tabularNums` : il se réécrit à chaque tour de page, une chasse
+              fixe lui évite de tressauter en largeur. */}
+          <Text style={styles.pageCount}>{`${index + 1} / ${pages.length}`}</Text>
         </Reveal>
       </View>
 
@@ -131,13 +137,21 @@ const styles = StyleSheet.create({
     color: colors.onSurfaceVariant,
     textAlign: 'center',
   },
+  pageCount: {
+    ...type.caption,
+    ...tabularNums,
+    color: colors.onSurfaceVariant,
+    textAlign: 'center',
+    marginTop: spacing.xs,
+  },
   pager: {
     flex: 1,
   },
   pageContent: {
-    // La feuille, elle, va d'un bord à l'autre : c'est son contenu qui garde
-    // la gouttière, sans quoi le bord du papier ne toucherait pas le bord de
-    // l'écran en tournant.
+    // La gouttière du contenu, à l'intérieur de la feuille — distincte de la
+    // marge de la feuille elle-même (`SHEET_INSET`, `NewspaperPager.tsx`) qui
+    // la détache des bords de l'écran. Sans celle-ci, l'affiche et les
+    // panneaux toucheraient les angles arrondis de la feuille.
     paddingHorizontal: spacing.gutter,
     paddingBottom: spacing.lg,
   },

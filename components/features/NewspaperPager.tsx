@@ -87,7 +87,21 @@ import Animated, {
   type SharedValue,
 } from 'react-native-reanimated';
 
-import { colors, radius } from '@/constants/theme';
+import { colors, radius, shadows, spacing } from '@/constants/theme';
+
+/**
+ * Marge autour de chaque feuille, à gauche et à droite. Sans elle, la feuille
+ * occupe le cadre bord à bord et l'ombre de `shadows.card` n'a nulle part où
+ * se voir — demande de Jonathan, 6 août 2026, en même temps que le contour
+ * noir cédait la place à cette ombre : « ne pas garder les pages du journal
+ * collées à droite et à gauche […] centrée légèrement ».
+ *
+ * Seulement gauche/droite, pas haut/bas : le cadre (`styles.frame`) épouse
+ * déjà exactement la hauteur disponible entre l'en-tête et la barre
+ * d'onglets, il n'y a pas de « bord du haut » à dégager comme il y a un bord
+ * du cadre à gauche et à droite de l'écran.
+ */
+const SHEET_INSET = spacing.sm;
 
 /**
  * Tous les réglages du feuilletage, au même endroit — c'est ici qu'on ajuste
@@ -128,19 +142,6 @@ export const TURN = {
   foldOpacity: 0.3,
   /** Part de la largeur sur laquelle cette flexion se dissipe. */
   foldSpread: 0.45,
-  /**
-   * Le liseré du bord de la feuille — un cheveu (`hairlineWidth`, soit un
-   * pixel physique), à l'opacité près.
-   *
-   * Il existe parce que les deux feuilles ont le **même fond crème** : là où
-   * le bord de celle qui bouge passe sur du crème, il est invisible, et
-   * l'arrondi des angles avec lui. C'était l'ombre portée qui dessinait ce
-   * bord ; en la retirant, on a retiré ce qui le rendait lisible. Le liseré le
-   * rend, **sans rien reposer sur la page du dessous**.
-   */
-  edgeOpacity: 0.9,
-  /** Part du glissement au bout de laquelle le liseré atteint sa pleine force. */
-  edgeFadeIn: 0.06,
   /** Retour en place quand le seuil n'a pas été franchi. */
   spring: { damping: 20, stiffness: 210, mass: 0.9 },
   /**
@@ -460,15 +461,13 @@ function Sheet({
         {children}
       </ScrollView>
 
-      {/* La flexion et le liseré n'existent que sur la feuille qui bouge —
-          jamais sur celle qu'on découvre, qui se montre à sa vraie couleur.
-          Le liseré passe en dernier : il reste net, sans être assombri par la
-          flexion. */}
+      {/* La flexion n'existe que sur la feuille qui bouge — jamais sur celle
+          qu'on découvre, qui se montre à sa vraie couleur. Le bord, lui, est
+          permanent : voir `styles.sheet`. */}
       {isTop && (
         <>
           <Fold side="left" progress={progress} />
           <Fold side="right" progress={progress} />
-          <Edge progress={progress} />
         </>
       )}
     </Animated.View>
@@ -511,29 +510,6 @@ function Fold({ side, progress }: { side: 'left' | 'right'; progress: SharedValu
   );
 }
 
-/**
- * Le bord de la feuille, tracé au cheveu.
- *
- * ⚠️ **Il ne peut pas vivre sur la feuille elle-même**, en `borderWidth`
- * permanent : au repos, la feuille couvre exactement le cadre, et son contour
- * dessinerait un rectangle autour de toute la zone — une boîte, pas une page.
- * Il est donc porté par un calque à part, dont seule l'**opacité** est animée
- * (la voie rapide de Reanimated), et qui n'est monté que sur la feuille du
- * dessus. À l'arrêt : invisible.
- *
- * La bordure d'une vue React Native se dessine **à l'intérieur** de ses bornes :
- * elle échappe donc au `overflow: 'hidden'` arrondi de la feuille, et ses
- * angles épousent exactement les siens.
- */
-function Edge({ progress }: { progress: SharedValue<number> }) {
-  const edgeStyle = useAnimatedStyle(() => {
-    const amount = Math.abs(progress.value) / TURN.edgeFadeIn;
-    return { opacity: (amount > 1 ? 1 : amount) * TURN.edgeOpacity };
-  });
-
-  return <Animated.View pointerEvents="none" style={[styles.edge, edgeStyle]} />;
-}
-
 const styles = StyleSheet.create({
   frame: {
     flex: 1,
@@ -544,8 +520,8 @@ const styles = StyleSheet.create({
   sheet: {
     position: 'absolute',
     top: 0,
-    left: 0,
-    right: 0,
+    left: SHEET_INSET,
+    right: SHEET_INSET,
     bottom: 0,
     // Opaque, sans quoi on verrait la feuille du dessous par transparence.
     backgroundColor: colors.background,
@@ -558,12 +534,25 @@ const styles = StyleSheet.create({
      * `overflow: 'hidden'` n'est pas facultatif : sans lui, seul le fond de la
      * feuille serait arrondi, et le dégradé de flexion — qui est ce qui rend
      * le bord VISIBLE — garderait ses coins carrés par-dessus.
-     *
-     * Au repos, l'arrondi ne se voit pas : la feuille couvre tout le cadre et
-     * ses coins laissent passer un fond de la même couleur qu'elle.
      */
     borderRadius: radius.md,
     overflow: 'hidden',
+    /**
+     * Une ombre plutôt qu'un contour — demande de Jonathan, 6 août 2026.
+     * L'intention de départ (« montrer que les pages de journal sont des
+     * pages de journal ») avait d'abord donné une petite bordure noire
+     * permanente ; jugée peu belle à l'écran, remplacée par `shadows.card` —
+     * la même ombre que les autres cartes de l'app (`Pane`, les panneaux de
+     * La Carte) — pour un effet de feuille **légèrement surélevée** plutôt
+     * qu'encadrée.
+     *
+     * ⚠️ Fonctionne malgré `overflow: 'hidden'` juste au-dessus : sur Android
+     * (la cible de test de ce projet), l'ombre portée par `elevation` n'est
+     * pas coupée par le clip de la vue qui la porte — même agencement que
+     * `Pane` dans `SpotlightParts.tsx`, qui combine déjà les deux sans
+     * calque séparé.
+     */
+    ...shadows.card,
   },
   overlay: {
     position: 'absolute',
@@ -571,15 +560,5 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-  },
-  edge: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.outlineVariant,
-    borderRadius: radius.md,
   },
 });

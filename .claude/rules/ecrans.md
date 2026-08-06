@@ -89,15 +89,40 @@ et les panneaux qu'elle contient), avec `overflow: 'hidden'` — sans lui, seul 
 fond serait arrondi et le dégradé de flexion garderait ses coins carrés
 par-dessus.
 
-**Et son bord est tracé au cheveu** (`Edge`, `StyleSheet.hairlineWidth` en
-`outlineVariant`), parce que les deux feuilles ont le même fond crème : sans ce
-liseré, le bord de celle qui bouge — et l'arrondi de ses angles — est invisible
-partout où il ne passe pas sur une photo. C'est l'ombre portée qui jouait ce
-rôle avant d'être retirée. ⚠️ **Le liseré ne peut pas être un `borderWidth`
-permanent sur la feuille** : au repos, elle couvre exactement le cadre et son
-contour dessinerait une boîte autour de toute la zone. Il vit donc sur un calque
-à part, monté sur la seule feuille du dessus, dont l'opacité suit le glissement
-et vaut 0 à l'arrêt.
+**Et elle porte une ombre permanente** (`shadows.card`, la même que `Pane` et
+les panneaux de La Carte) plutôt qu'un contour — demande de Jonathan, 6 août
+2026, qui a tranché en deux temps dans la même session :
+
+1. « montrer que les pages de journal sont des pages de journal » → une petite
+   bordure noire permanente (`borderWidth: 1`, `colors.duskShade`) ;
+2. « oublie la bordure noire, c'est pas beau, peut-être un léger ombrage pour
+   donner l'impression qu'elle est un peu surélevée » → l'ombre actuelle.
+
+Trois versions successives du même besoin, à ne pas rouvrir sans relire cet
+historique :
+
+- **5 août** — un liseré au cheveu (`Edge`), qui n'apparaissait **qu'au
+  glissement** (opacité pilotée par `progress`), parce qu'un `borderWidth`
+  permanent dessinerait une boîte autour d'une feuille qui couvrait alors le
+  cadre bord à bord.
+- **6 août, 1er temps** — le `borderWidth` permanent, precisément ce qu'on
+  avait écarté la veille : Jonathan voulait la page reconnaissable **en
+  permanence**, pas seulement pendant le geste.
+- **6 août, 2e temps** — l'ombre, jugée plus belle. Elle exige la marge
+  ci-dessous, que le contour n'exigeait pas — une bordure se voit contre
+  n'importe quel fond, une ombre a besoin d'espace pour se projeter.
+
+⚠️ **Ne fonctionne que grâce à `SHEET_INSET`** (`spacing.sm`, gauche/droite
+seulement) sur `styles.sheet` : une feuille bord à bord avec le cadre n'a nulle
+part où projeter son ombre — `frame` la coupe (`overflow: 'hidden'`) exactement
+là où elle apparaîtrait. `SHEET_INSET` est distinct de la gouttière de contenu
+(`pageContent` dans `app/(tabs)/soirees.tsx`) : l'un détache la feuille des
+bords de l'écran, l'autre détache son contenu des angles arrondis de la
+feuille — les deux marges s'additionnent, ce n'est pas une redite.
+
+L'ombre fonctionne malgré le `overflow: 'hidden'` de la feuille (nécessaire aux
+angles arrondis) : sur Android, cible de test de ce projet, `elevation` n'est
+pas coupée par le clip de la vue qui la porte — même agencement que `Pane`.
 
 **Le feuilletage boucle** (la dernière page ramène à la première), donc pas de
 butée ni de résistance aux bords — le jour où l'on passerait en butée, la
@@ -127,7 +152,30 @@ journal se présente toujours par son début.
 
 **Les pastilles sont la navigation sans geste** (et l'équivalent des boutons
 précédent/suivant) : chaque pastille tourne les pages jusqu'à la sienne, par le
-chemin le plus court.
+chemin le plus court. Un compteur (« 2 / 3 », `tabularNums`) les accompagne
+depuis le 6 août 2026 — « un indicateur plus marquant pour le nombre de page » :
+la rangée de pastilles seule ne dit pas d'un coup d'œil où on en est.
+
+⚠️ **Les pastilles utilisaient `transition: 'medium'` (ressort lâche,
+`stiffness: 150`) et ça se voyait comme un décalage.** L'index React ne change
+qu'à la FIN du tour de page (300 ms, `TURN.timing`) — la pastille active ne
+commence donc à bouger qu'une fois la feuille déjà immobile, et un ressort trop
+lent continue alors de glisser bien après coup : repéré par Jonathan comme une
+« impression de lag ». Passé à `'quick'` (`stiffness: 340`), qui se pose plus
+vite que la feuille ne met à tourner.
+
+**Une seule affiche porte le compte à rebours.** `ArtistSpotlight` n'a plus de
+`Countdown` depuis le 6 août 2026 : le répéter sur l'affiche de l'artiste
+doublait l'information déjà donnée par « À l'affiche », et faisait battre deux
+points ambrés sur la même page. `EventSpotlight` reste la seule source.
+
+**Les réseaux de l'artiste (`ArtistDetailPane`) sont en `tone="soft"` et
+`size="md"`**, pas `ghost`/`sm` : « les mettre un peu plus en avant », demande
+du même jour. Trois pastilles nues en bas de panneau se lisaient comme un
+détail secondaire ; un disque de couleur (teinte du thème de la soirée) leur
+donne un poids visuel, un `Kicker` (« Retrouver l'artiste ») les identifie.
+Mécanique inchangée — mêmes trois `Linking.openURL`, même désactivation si
+l'URL est vide (voir `.claude/rules/donnees-et-demo.md`).
 
 `prefers-reduced-motion` coupe l'aperçu et le pli (`dragX` reste à 0, le tour
 de page devient instantané) mais **pas** la fonction : glisser ou toucher une

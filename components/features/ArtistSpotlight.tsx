@@ -8,9 +8,11 @@
  * même feuille**. L'`activeEventId` qui reliait les deux carrousels n'a plus
  * d'objet — c'est la page qui les tient ensemble.
  *
- * Le compte à rebours n'a pas de forme pour le passé (`utils/date.ts` →
- * `formatCountdown` affiche « C'est maintenant ! » sans limite de durée) : on
- * ne l'affiche donc que pour une soirée à venir.
+ * ⚠️ **Pas de `Countdown` ici** — demande de Jonathan, 6 août 2026 : le
+ * pastille « J-12 · 5 h » et son point qui bat n'apparaissent que sur la
+ * première affiche (« À l'affiche », `EventSpotlight`). La répéter sur celle
+ * de l'artiste doublait l'information sans rien ajouter, et faisait battre
+ * deux points sur la même page.
  */
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -20,7 +22,6 @@ import { useReducedMotion } from 'react-native-reanimated';
 import { Text, Theme, View, XStack, YStack } from 'tamagui';
 
 import { ArtistDetailPane } from '@/components/features/ArtistDetailPane';
-import { Countdown } from '@/components/features/Countdown';
 import {
   Kicker,
   PosterContent,
@@ -79,7 +80,6 @@ function ArtistSpotlightComponent({ kicker, artist, event }: ArtistSpotlightProp
 
           <Theme name="lampion">
             <YStack gap="$base" padding="$md">
-              {event.startsAt.getTime() > Date.now() && <Countdown startsAt={event.startsAt} />}
               <PosterTitle>{artist.name}</PosterTitle>
               <PosterMeta>{`${event.title} · ${event.when}`}</PosterMeta>
             </YStack>

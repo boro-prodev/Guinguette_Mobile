@@ -15,7 +15,7 @@ import { Linking } from 'react-native';
 import Animated, { FadeIn, ReduceMotion, useReducedMotion } from 'react-native-reanimated';
 import { Theme, XStack, YStack } from 'tamagui';
 
-import { Body, Pane } from '@/components/features/SpotlightParts';
+import { Body, Kicker, Pane } from '@/components/features/SpotlightParts';
 import { Button } from '@/components/ui/Button';
 import { shadows } from '@/constants/theme';
 import type { Artist } from '@/data/artists';
@@ -44,46 +44,63 @@ function ArtistDetailContent({ artist, event }: ArtistDetailPaneProps) {
         <YStack gap="$sm">
           <Body>{artist.bio}</Body>
 
-          <XStack gap="$sm">
-            <Button
-              tone="ghost"
-              size="sm"
-              circular
-              disabled={!artist.website}
-              accessibilityLabel={
-                artist.website ? `Voir le site de ${artist.name}` : 'Site indisponible'
-              }
-              onPress={openWebsite}
-            >
-              <Button.Icon name="link" />
-            </Button>
+          {/*
+            Demande de Jonathan, 6 août 2026 : « mettre les réseaux de
+            l'artiste un peu plus en avant ». Trois retouches, aucune ne
+            change la mécanique (mêmes trois pastilles, même
+            `Linking.openURL`, même désactivation si l'URL est vide — voir
+            `.claude/rules/donnees-et-demo.md`) :
+            - un intitulé au-dessus, là où la rangée flottait seule, anonyme,
+              en bas du panneau ;
+            - `tone="soft"` plutôt que `ghost` : un disque de couleur douce
+              (teinte du thème de la soirée) au lieu d'une icône nue qui se
+              fond dans le fond du panneau ;
+            - `size="md"` plutôt que `sm` : la cible tactile passe de 36 à
+              44 px, la même que partout ailleurs dans l'app.
+          */}
+          <YStack gap="$xs">
+            <Kicker>Retrouver l’artiste</Kicker>
+            <XStack gap="$sm">
+              <Button
+                tone="soft"
+                size="md"
+                circular
+                disabled={!artist.website}
+                accessibilityLabel={
+                  artist.website ? `Voir le site de ${artist.name}` : 'Site indisponible'
+                }
+                onPress={openWebsite}
+              >
+                <Button.Icon name="link" />
+              </Button>
 
-            <Button
-              tone="ghost"
-              size="sm"
-              circular
-              disabled={!artist.instagram}
-              accessibilityLabel={
-                artist.instagram ? `Voir l’Instagram de ${artist.name}` : 'Instagram indisponible'
-              }
-              onPress={openInstagram}
-            >
-              <Button.Icon name="instagram" />
-            </Button>
+              <Button
+                tone="soft"
+                size="md"
+                circular
+                disabled={!artist.instagram}
+                accessibilityLabel={
+                  artist.instagram ? `Voir l’Instagram de ${artist.name}` : 'Instagram indisponible'
+                }
+                onPress={openInstagram}
+              >
+                <Button.Icon name="instagram" />
+              </Button>
 
-            <Button
-              tone="ghost"
-              size="sm"
-              circular
-              disabled={!artist.facebook}
-              accessibilityLabel={
-                artist.facebook ? `Voir le Facebook de ${artist.name}` : 'Facebook indisponible'
-              }
-              onPress={openFacebook}
-            >
-              <Button.Icon name="facebook" />
-            </Button>
-          </XStack>
+              <Button
+                tone="soft"
+                size="md"
+                circular
+                disabled={!artist.facebook}
+                accessibilityLabel={
+                  artist.facebook ? `Voir le Facebook de ${artist.name}` : 'Facebook indisponible'
+                }
+                onPress={openFacebook}
+              >
+                <Button.Icon name="facebook" />
+              </Button>
+            </XStack>
+          </YStack>
         </YStack>
       </Animated.View>
     </Theme>

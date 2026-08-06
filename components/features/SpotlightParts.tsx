@@ -82,14 +82,26 @@ export const DotTarget = styled(View, {
 
 export const DotBar = styled(View, {
   name: 'SpotlightDot',
-  height: 6,
+  // 8 plutôt que 6 : demande de Jonathan, 6 août 2026 — « un indicateur plus
+  // marquant pour le nombre de page ». Monte avec `active.width` ci-dessous.
+  height: 8,
   borderRadius: '$pill',
-  transition: 'medium',
+  /**
+   * ⚠️ **`quick`, pas `medium`.** L'index React ne change qu'à la FIN du tour
+   * de page (300 ms, `TURN.timing`, `NewspaperPager.tsx`) : la pastille ne
+   * commence donc à bouger qu'une fois la feuille déjà immobile. Avec
+   * `medium` (ressort lâche, `stiffness: 150`), elle continuait de glisser
+   * nettement après coup — un décalage que Jonathan a repéré comme une
+   * impression de lag. `quick` (`stiffness: 340`) se pose bien plus vite que
+   * la feuille ne met à tourner : la pastille a fini quand l'œil regarde déjà
+   * la page suivante, elle ne traîne plus derrière elle.
+   */
+  transition: 'quick',
 
   variants: {
     active: {
-      true: { width: 30, backgroundColor: '$solid' },
-      false: { width: 8, backgroundColor: '$borderColor' },
+      true: { width: 36, backgroundColor: '$solid' },
+      false: { width: 10, backgroundColor: '$borderColor' },
     },
   } as const,
 
