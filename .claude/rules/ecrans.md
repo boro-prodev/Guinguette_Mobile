@@ -152,6 +152,17 @@ ce défilement, qui reste prioritaire. Une feuille qu'on vient de quitter est
 remise en haut de son défilement — invisible à cet instant, et une page de
 journal se présente toujours par son début.
 
+⚠️ **Le pager n'est pas enveloppé d'un `Reveal`, contrairement à l'en-tête
+au-dessus de lui.** Il l'était (`delay={300} fadeOnly`) jusqu'au 6 août 2026 :
+en arrivant sur l'onglet depuis un autre, Jonathan apercevait « l'ossature »
+— la feuille (ombre, coins arrondis du même jour) posée avant que son contenu
+n'ait fini de s'y superposer. Tant que la feuille était sans identité propre
+(bord à bord, sans ombre), ce délai ne se voyait pas ; en lui donnant une
+forme visible le même jour, on a aussi rendu visible le moment où cette forme
+apparaît **seule**. Le cadre et son contenu doivent donc se monter ensemble,
+dès la première image — même posture que la liste de `carte.tsx`, qui n'est
+pas non plus enveloppée d'un `Reveal` (seul son en-tête l'est).
+
 **Les pastilles sont la navigation sans geste** (et l'équivalent des boutons
 précédent/suivant) : chaque pastille tourne les pages jusqu'à la sienne, par le
 chemin le plus court. Un compteur (« 2 / 3 », `tabularNums`) les accompagne

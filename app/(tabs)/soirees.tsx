@@ -92,16 +92,29 @@ export default function SoireesScreen() {
         </Reveal>
       </View>
 
-      <Reveal delay={300} fadeOnly style={styles.pager}>
-        <NewspaperPager
-          ref={pager}
-          pages={pages}
-          keyExtractor={(page) => page.event.id}
-          renderPage={renderPage}
-          onPageChange={setIndex}
-          contentContainerStyle={styles.pageContent}
-        />
-      </Reveal>
+      {/*
+        ⚠️ Pas de `Reveal` ici — demande de Jonathan, 6 août 2026 : en
+        changeant d'onglet vers Soirées, il apercevait « l'ossature », la
+        place destinée à la feuille, avant que son contenu ne s'y pose.
+
+        La feuille a désormais une forme visible en elle-même (l'ombre et les
+        coins arrondis du 6 août) : la faire apparaître EN RETARD sur son
+        contenu — c'était le rôle de ce `Reveal delay={300} fadeOnly` — expose
+        cette forme vide un instant, ce qui ne se voyait pas tant que le cadre
+        était sans identité propre (bord à bord, sans ombre). Le cadre et son
+        contenu doivent donc apparaître ENSEMBLE, dès la première image :
+        c'est déjà ce que fait `carte.tsx`, dont la liste n'est pas non plus
+        enveloppée d'un `Reveal` — seul son en-tête l'est.
+      */}
+      <NewspaperPager
+        ref={pager}
+        pages={pages}
+        keyExtractor={(page) => page.event.id}
+        renderPage={renderPage}
+        onPageChange={setIndex}
+        contentContainerStyle={styles.pageContent}
+        style={styles.pager}
+      />
     </View>
   );
 }
