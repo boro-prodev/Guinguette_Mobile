@@ -27,103 +27,89 @@ navigation et donné entièrement au carrousel (voir plus bas). `useSwipeGuard()
 a disparu avec lui ; la rangée de filtres de La Carte (`app/(tabs)/carte.tsx`)
 n'a plus besoin de s'en prémunir.
 
-## Le carrousel de l'écran Soirées se pilote au tap **et** au swipe
+## L'écran Soirées se feuillette comme un journal
 
-« À l'affiche » et « Artist Spot » (`EventSpotlight`/`ArtistSpotlight`) partagent
-un seul composant, `PosterFrame` (`components/features/PosterCarousel.tsx`),
-qui porte **toute** la mécanique — geste, rendu, retour tactile. Deux façons
-équivalentes d'avancer :
+**Une page = une soirée**, et elle contient tout : l'affiche de la soirée, son
+panneau, l'affiche de l'artiste, sa fiche. Seuls le titre, l'accroche et la
+rangée de pastilles restent fixes — l'ours du journal. Tout le reste est une
+**feuille** d'un seul tenant, qui suit le doigt, pivote sur son bord meneur,
+projette une ombre sur la page du dessous et la découvre.
 
-- **le tap sur l'affiche** ;
-- **le swipe horizontal** — gauche pour avancer, droite pour reculer.
+Toute la mécanique vit dans `components/features/NewspaperPager.tsx`, un
+composant générique. `EventSpotlight`/`ArtistSpotlight` ne naviguent plus du
+tout : ils montrent ce qu'on leur donne.
 
-⚠️ **Ce n'est pas un crossfade.** La première version (`AnimatePresence`,
-fondu + scale) a été abandonnée le 5 août 2026 (soir) après trois défauts
-remontés par Jonathan à l'écran :
+⚠️ **Un seul geste horizontal par écran.** Le carrousel d'affiches
+(`PosterFrame`, tap et swipe sur l'affiche) a été **retiré** le 6 août 2026 en
+même temps que ce chantier arrivait. Ce n'est pas une perte de fonction, c'est
+la même leçon que la disparition du swipe entre onglets la veille, un cran plus
+bas : deux gestes horizontaux imbriqués finissent toujours par s'arbitrer mal.
+`pageFollowX` (une fraction du glissement répercutée sur toute la page) a
+disparu avec — il était le brouillon de ce qu'on fait maintenant pour de bon.
 
-1. le panneau de détails (remonté par `key`) changeait de contenu avant que
-   l'affiche ait fini son fondu — jamais synchronisés ;
-2. glisser le doigt révélait le fond blanc de `PosterShell` derrière
-   l'affiche qui suivait le doigt, puisqu'une seule affiche était montée à
-   la fois ;
-3. le retour tactile au tap (`scale` posé sur un enfant *clippé* par
-   `PosterShell`) révélait à la fois ce fond blanc et le contour carré, non
-   arrondi, de l'enfant.
+⚠️ **Le piège du clignotement est fermé par construction, pas par astuce.**
+Trois corrections successives de l'ancien carrousel venaient toutes du même
+endroit : le thread UI et React n'arrivent pas à l'écran au même instant, et
+l'image d'intervalle montre un état qui n'a jamais existé. Le pager repose sur
+trois invariants, à lire dans son en-tête avant d'y toucher :
 
-**`PosterFrame` est un vrai carrousel à trois affiches** (précédente / active
-/ suivante), toujours montées côte à côte dans une bande que `PosterShell`
-(overflow `hidden`) ne laisse voir qu'au milieu tant qu'on ne glisse pas.
-Glisser translate la bande entière : la voisine devient donc visible en vrai,
-jamais un fond vide — l'effet livre demandé par Jonathan. Tap et
-swipe-abouti déclenchent la **même** glissade programmatique (durée fixe,
-`Easing.out(Easing.cubic)`), jamais deux langages visuels différents.
+1. **Toutes les pages sont montées en permanence et superposées.** Changer de
+   page ne déplace aucune vue, ne réattribue aucune position, ne recharge
+   aucune image.
+2. **L'index React ne change qu'à la fin du mouvement**, jamais au relâchement
+   du doigt ni pendant le glissement.
+3. **La feuille sortante est masquée dans le MÊME worklet que la remise à zéro
+   de `dragX`.** C'est le point à ne pas défaire : l'image qui précède le rendu
+   React devient alors rigoureusement identique à celle qui le suit, et le
+   rendu peut arriver quand il veut, même dix images plus tard.
 
-⚠️ **Point clé pour la synchronisation : l'état ne change qu'à la fin de la
-glissade**, jamais au relâchement du doigt. `onCommit` n'est appelé que dans
-le callback de fin de `withTiming` — c'est ce qui permet à l'affiche et au
-panneau de détails de changer exactement au même instant.
+⚠️ **Le `zIndex` des feuilles vient de React, jamais d'un worklet.** Sans lui,
+la page révélée passerait par-dessus celle qui bouge (ordre de rendu du
+tableau). Le poser en état React est sans danger *grâce au point 3* ; l'animer
+sur le thread UI ne le serait pas — `zIndex` passe par le circuit de commit et
+`transform` par la voie rapide, les deux n'arrivent pas ensemble.
 
-⚠️ **La bande ne se « repose » jamais à 0 — elle avance.** Une version
-intermédiaire remettait `dragX` à 0 en même temps qu'elle appelait `onCommit` :
-la remise à 0 s'applique sur le thread UI, le nouvel index passe par un rendu
-React, donc la première arrivait à l'écran avant le second et on voyait
-l'affiche suivante, puis un retour brutal à l'ancienne, puis enfin la nouvelle
-(« image 2, image 1, image 2 »). `dragX` garde désormais sa position et c'est
-un décalage compté en largeurs, `shift`, qui l'annule. `shift` étant un état
-React posé dans le **même bloc synchrone** que `onCommit`, les deux arrivent
-dans le même rendu. L'invariant au repos : `dragX === shift × largeur`, donc la
-position visible `dragX − shift × largeur` vaut 0. Ne pas réintroduire de
-remise à zéro.
+**Le pli est simulé, et c'est définitif tant qu'on reste sur Expo Go.** Un vrai
+*page curl* demanderait un maillage déformable ou un shader (React Native
+Skia), module natif absent d'Expo Go. Le pli se compose donc de : perspective,
+rotation autour du bord meneur (obtenue par un trio `+pivot / rotateY / −pivot`,
+`transformOrigin` n'étant pas animable), ombre portée au bord libre, dégradé de
+flexion, et voile sur la page révélée. Si le rendu doit aller plus loin, ce sera
+par calques.
 
-⚠️ **Et `shift` se lit en style ORDINAIRE, jamais dans un worklet.** Le premier
-correctif ci-dessus tenait l'invariant mais consommait `shift` dans le style
-animé de la bande, alors que les positions des trois affiches (`left`) sont un
-style React Native ordinaire. Deux chemins, donc deux instants : au commit, les
-`left` se réattribuaient autour du nouvel index pendant que la bande était
-encore décalée d'une largeur, et cette image-là montrait la case `+1` du
-**nouvel** index — un bref éclair de l'affiche d'après, « image 1, image 3,
-image 2 ». L'annulation vit donc sur une vue intercalée en style ordinaire,
-validée dans le même commit que les `left`. Le thread UI ne porte plus que
-`dragX`, déjà arrivé avant le commit. Vu à l'écran par Jonathan, corrigé le
-5 août 2026.
+**Le feuilletage boucle** (la dernière page ramène à la première), donc pas de
+butée ni de résistance aux bords — le jour où l'on passerait en butée, la
+résistance se poserait dans `onUpdate`, et nulle part ailleurs.
 
-⚠️ **Une affiche est identifiée par son élément, jamais par sa place.** Les
-trois emplacements ont d'abord été fixes (précédente/active/suivante) : à
-chaque changement, la **même** `<Image>` recevait une nouvelle `source`, donc
-expo-image refaisait son fondu depuis le vide — on voyait le fond gris du cadre
-et le texte, sans photo, le temps du décodage. Chaque affiche porte maintenant
-la `key` de son élément (prop `keyExtractor`, fournie par `EventSpotlight` et
-`ArtistSpotlight`) et ne fait que changer de `left` : React conserve
-l'instance, l'image reste décodée.
+**Deux pièges d'exécution, tous deux rencontrés le 6 août 2026 et coûteux à
+diagnostiquer parce qu'ils ne ressemblent pas à leur cause :**
 
-⚠️ **Le scale de pression vit sur un wrapper à l'EXTÉRIEUR de `PosterShell`**,
-jamais sur un enfant qu'elle clippe : toute la carte arrondie rétrécit comme
-un seul bloc, sans révéler ni fond ni contour carré (piège rencontré à la
-première version, voir ci-dessus).
+- ⚠️ **Le `ScrollView` d'une feuille vient de `react-native-gesture-handler`,
+  jamais de `react-native`.** Avec celui de React Native, le défilement natif
+  avale le toucher et le geste horizontal ne reçoit **rien du tout** — ni
+  `onUpdate`, ni `onEnd` : la page ne bouge pas d'un pixel, sans la moindre
+  erreur. Celui de gesture-handler est enveloppé d'un
+  `NativeViewGestureHandler`, ce qui donne à RNGH deux gestes à arbitrer au
+  lieu d'un seul.
+- ⚠️ **Toute fonction utilitaire appelée depuis un worklet doit elle-même être
+  un worklet.** Un simple modulo (`wrap`) laissé en fonction JS ordinaire
+  **fait planter l'application en natif** dès le premier geste : « Tried to
+  synchronously call a Remote Function ». Le message ne nomme pas le fichier
+  fautif dans la red box — il n'apparaît qu'en `adb logcat`.
 
-⚠️ **Un second geste pendant une glissade en cours est ignoré**, pas empilé —
-une valeur partagée `isAnimating` le fait taire dès `onBegin`/`onEnd`, reset
-dans `finishSlide`. Sans ça, un double tap ou un double swipe rapprochés
-pouvaient faire dérailler `dragX` en pleine animation.
+**Chaque feuille défile verticalement de son côté** : seule la fenêtre visible
+se plie. `activeOffsetX`/`failOffsetY` arbitrent entre le geste horizontal et
+ce défilement, qui reste prioritaire. Une feuille qu'on vient de quitter est
+remise en haut de son défilement — invisible à cet instant, et une page de
+journal se présente toujours par son début.
 
-⚠️ **`Gesture.Pan()` est imbriqué dans le `ScrollView` vertical de l'écran** :
-`activeOffsetX`/`failOffsetY` arbitrent avec le défilement de la page comme
-`SwipeTabsArea` le faisait en son temps avec le swipe d'onglets, mais il n'y a
-plus de second geste horizontal concurrent à cet endroit — seul le défilement
-vertical de la page doit rester prioritaire au-delà du seuil vertical.
+**Les pastilles sont la navigation sans geste** (et l'équivalent des boutons
+précédent/suivant) : chaque pastille tourne les pages jusqu'à la sienne, par le
+chemin le plus court.
 
-**Toute la page suit le geste, pas seulement l'affiche.** Un `pageFollowX`
-(valeur partagée Reanimated, levée dans `soirees.tsx`, transmise aux deux
-sections) applique un très léger `translateX` à l'ensemble du contenu de
-l'écran pendant le glissement — qu'on soit en haut ou en bas de la page, le
-`transform` s'applique au conteneur qui enveloppe tout le contenu défilable,
-pas à la position de défilement. Revient à 0 par ressort au relâchement, que
-le seuil ait été franchi ou non.
-
-`prefers-reduced-motion` coupe l'aperçu de glissement (`dragX`/`pageFollowX`
-restent à 0, la glissade programmatique devient instantanée) mais **pas** la
-fonction : taper ou swiper change toujours de diapositive, seule
-l'animation disparaît — même convention que le reste du fichier.
+`prefers-reduced-motion` coupe l'aperçu et le pli (`dragX` reste à 0, le tour
+de page devient instantané) mais **pas** la fonction : glisser ou toucher une
+pastille change toujours de soirée — même convention que le reste du fichier.
 
 ## Le panneau de détails ne démonte jamais son ombre portée
 

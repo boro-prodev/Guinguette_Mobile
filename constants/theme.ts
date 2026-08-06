@@ -62,6 +62,19 @@ export const colors = {
    * qui portent la couleur, pas le contour.
    */
   glassEdge: 'rgba(255,253,247,0.4)',
+
+  /**
+   * `duskDeep` en translucide, pour les dégradés. Trois crans nommés plutôt
+   * qu'un `rgba` recopié : le voile des affiches, l'ombre du pli de la page
+   * journal, et le zéro.
+   *
+   * ⚠️ **Le zéro n'est pas `'transparent'`** : sur Android, un dégradé qui
+   * finit sur `transparent` (donc sur du noir alpha 0) vire au gris en chemin.
+   * Il faut la même encre à alpha 0.
+   */
+  duskFade: 'rgba(12,23,32,0)',
+  duskShade: 'rgba(12,23,32,0.5)',
+  duskVeil: 'rgba(12,23,32,0.85)',
 } as const;
 
 /**

@@ -23,7 +23,7 @@ import { StyleSheet } from 'react-native';
 import Animated, { FadeIn, ReduceMotion, useReducedMotion } from 'react-native-reanimated';
 import { styled, Text, Theme, XStack, YStack } from 'tamagui';
 
-import { Body, Pane } from '@/components/features/PosterCarousel';
+import { Body, Pane } from '@/components/features/SpotlightParts';
 import { SeatsGauge } from '@/components/features/SeatsGauge';
 import { useToast } from '@/components/toast/ToastProvider';
 import { Button } from '@/components/ui/Button';

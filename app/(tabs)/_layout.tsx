@@ -7,10 +7,10 @@
  *
  * ⚠️ Navigation **au tap uniquement** — pas de swipe au doigt entre onglets.
  * Il y en a eu un (`SwipeTabsArea`, `components/layout/SwipeTabs.tsx`),
- * retiré : le même geste servait aussi à naviguer dans les carrousels de
- * l'écran Soirées, ce qui créait une ambiguïté entre « je swipe l'affiche »
- * et « je change d'onglet ». Le swipe horizontal appartient maintenant au
- * carrousel (`components/features/PosterCarousel.tsx`), la barre d'onglets
+ * retiré : le même geste servait aussi à naviguer dans l'écran Soirées, ce qui
+ * créait une ambiguïté entre « je navigue dans l'écran » et « je change
+ * d'onglet ». Le swipe horizontal appartient maintenant au feuilletage de
+ * Soirées (`components/features/NewspaperPager.tsx`), la barre d'onglets
  * reprend le tap classique.
  */
 import { Tabs } from 'expo-router';

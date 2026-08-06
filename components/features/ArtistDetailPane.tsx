@@ -15,7 +15,7 @@ import { Linking } from 'react-native';
 import Animated, { FadeIn, ReduceMotion, useReducedMotion } from 'react-native-reanimated';
 import { Theme, XStack, YStack } from 'tamagui';
 
-import { Body, Pane } from '@/components/features/PosterCarousel';
+import { Body, Pane } from '@/components/features/SpotlightParts';
 import { Button } from '@/components/ui/Button';
 import { shadows } from '@/constants/theme';
 import type { Artist } from '@/data/artists';

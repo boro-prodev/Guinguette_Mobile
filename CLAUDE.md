@@ -45,7 +45,7 @@ Elles priment, même sans avoir ouvert le fichier de règles correspondant.
 | `.claude/rules/typographie.md` | poser une taille de texte ou un interligne, écrire un libellé, rédiger du contenu français |
 | `.claude/rules/ecrans.md` | toucher à la navigation, à un défilement, à une animation, au fond vidéo de l'accueil |
 | `.claude/rules/donnees-et-demo.md` | modifier le contenu de la démo, ajouter un parcours, persister un état |
-| `ROADMAP.md` | entamer un chantier sur Accueil, Soirées ou La Carte |
+| `ROADMAP.md` | entamer un chantier — il ne reste que le mouvement (bouton, feuille), le voile de la vidéo et l'ouverture des fiches de La Carte |
 
 Lancer l'app, installer un paquet, toucher aux versions ou committer : ce n'est
 plus un fichier à ouvrir, c'est le skill **`environnement`**, invoqué
@@ -75,9 +75,10 @@ automatiquement selon l'intention (`.claude/skills/environnement/`).
 | `tamagui.config.ts` | Expose `theme.ts` à Tamagui : tokens, polices, thèmes d'accent, animations |
 | `components/ui/Button.tsx` | **LE bouton de l'app** — un seul objet, décliné par thème |
 | `components/ui/PressableScale.tsx` | Zone tactile brute — **pas** un bouton |
-| `components/features/PosterCarousel.tsx` | `PosterFrame` — mécanique **et** rendu complets des deux carrousels de Soirées : bande à trois affiches (façon livre), geste tap **et** swipe (`react-native-gesture-handler`), retour tactile |
-| `components/features/EventSpotlight.tsx` / `EventDetailPane.tsx` | « À l'affiche » : une soirée à la fois, **au tap ou au swipe**, panneau **toujours affiché** en dessous — description, programme, jauge, tarif, bouton « Participer » |
-| `components/features/ArtistSpotlight.tsx` / `ArtistDetailPane.tsx` | « Artist Spot » : même mécanique, appliquée aux artistes (`data/artists.ts`) — bio, style musical, liens site/réseaux sociaux. Synchronisé avec « À l'affiche » via un `activeEventId` partagé (`app/(tabs)/soirees.tsx`), qui porte aussi `pageFollowX` (toute la page suit le swipe du carrousel) |
+| `components/features/NewspaperPager.tsx` | **Le feuilletage de Soirées** — une page entière tourne comme une feuille de journal : geste, perspective, pli, ombre portée. Générique et réutilisable ; tous ses réglages dans l'objet `TURN` |
+| `components/features/SpotlightParts.tsx` | L'habillage commun aux deux sections de Soirées (cadre d'affiche, titraille, panneau à ombre, pastilles). **Aucune mécanique** — le carrousel qu'il portait a été retiré |
+| `components/features/EventSpotlight.tsx` / `EventDetailPane.tsx` | « À l'affiche » : la soirée de la page — affiche, description, programme, jauge, tarif, bouton « Participer » |
+| `components/features/ArtistSpotlight.tsx` / `ArtistDetailPane.tsx` | « Artist Spot » : l'artiste de **cette même soirée** (`data/artists.ts`, relié par `eventId`) — bio, style musical, liens site/réseaux sociaux |
 | `components/features/Countdown.tsx` | Compte à rebours vivant (retick chaque minute, point qui bat) |
 | `components/features/SeatsGauge.tsx` | Jauge de places, pousse depuis la gauche à l'apparition |
 | `features/reserve/` | Parcours de réservation simulé (bottom sheet 3 étapes) |
