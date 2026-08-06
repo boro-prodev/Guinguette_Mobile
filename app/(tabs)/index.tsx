@@ -18,7 +18,7 @@ import { useEvent, useEventListener } from 'expo';
 import { BlurTargetView } from 'expo-blur';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
-import { router } from 'expo-router';
+import { router, useIsFocused } from 'expo-router';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
@@ -191,6 +191,31 @@ export default function HomeScreen() {
     fadeIn(secondaryOpacity);
   }, [status, primaryOpacity, secondaryOpacity]);
 
+  // Quatrième sortie : l'utilisateur change d'onglet avant la fin de
+  // l'ouverture. `lazy: false` (`app/(tabs)/_layout.tsx`) garde l'accueil
+  // monté en permanence, donc la vidéo continuerait de jouer et les boutons de
+  // finir leur fondu hors écran si on ne coupait pas court. Au lieu de ça, on
+  // saute directement à l'état final — vidéo sur sa dernière image, boutons à
+  // pleine opacité d'un coup, pas en fondu — pour qu'en revenant sur l'accueil
+  // il n'y ait plus rien à attendre.
+  const isFocused = useIsFocused();
+  useEffect(() => {
+    if (isFocused || introDone) return;
+
+    introTimers.current.forEach(clearTimeout);
+    introTimers.current = [];
+
+    if (videoReady) {
+      if (player.duration > 0) player.currentTime = player.duration;
+      player.pause();
+    }
+
+    videoOpacity.value = 1;
+    primaryOpacity.value = 1;
+    secondaryOpacity.value = 1;
+    setIntroDone(true);
+  }, [isFocused, introDone, videoReady, player, videoOpacity, primaryOpacity, secondaryOpacity]);
+
   // Équivalent de @keyframes hero-zoom : la photo se pose lentement.
   useEffect(() => {
     scale.value = withTiming(1, {
@@ -279,7 +304,14 @@ export default function HomeScreen() {
         </Reveal>
 
         <Reveal delay={300} fadeOnly style={styles.guirlande}>
-          <Guirlande width={200} />
+          {/*
+            `active` reste faux tant que l'ouverture (vidéo) n'est pas
+            terminée : la guirlande ne doit pas scintiller en même temps que la
+            vidéo joue, sous peine de deux animations qui se disputent le
+            regard. `introDone` couvre les quatre sorties (fin normale, coupure
+            au changement d'onglet, animations désactivées, échec de lecture).
+          */}
+          <Guirlande width={200} active={introDone} />
         </Reveal>
 
         <Reveal delay={300}>

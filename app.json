@@ -7,6 +7,7 @@
     "scheme": "guinguette",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
+    "backgroundColor": "#0c1720",
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "be.guinguette.oignies"

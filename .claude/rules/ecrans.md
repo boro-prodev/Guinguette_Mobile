@@ -197,9 +197,12 @@ points ambrés sur la même page. `EventSpotlight` reste la seule source.
 
 **Les réseaux de l'artiste (`ArtistDetailPane`) sont en `tone="soft"` et
 `size="md"`**, pas `ghost`/`sm` : « les mettre un peu plus en avant », demande
-du même jour. Trois pastilles nues en bas de panneau se lisaient comme un
+du 6 août 2026. Trois pastilles nues en bas de panneau se lisaient comme un
 détail secondaire ; un disque de couleur (teinte du thème de la soirée) leur
-donne un poids visuel, un `Kicker` (« Retrouver l'artiste ») les identifie.
+donne un poids visuel. Un `Kicker` (« Retrouver l'artiste ») les a un temps
+identifiées, retiré le 7 août 2026 — Jonathan le jugeait superflu au-dessus de
+trois pastilles déjà assez parlantes, d'autant plus depuis qu'elles portent
+leurs vraies couleurs de marque (`SocialIcon`, `components/ui/SocialIcon.tsx`).
 Mécanique inchangée — mêmes trois `Linking.openURL`, même désactivation si
 l'URL est vide (voir `.claude/rules/donnees-et-demo.md`).
 
@@ -361,14 +364,34 @@ règles encadrent ce séquencement :
 - **Invisible veut dire inatteignable** : `pointerEvents="none"` *et*
   `accessibilityElementsHidden` tant que l'ouverture tourne. Un bouton
   transparent qu'on peut quand même activer est un piège.
-- **Trois sorties garantissent que les boutons finissent toujours par
+- **Quatre sorties garantissent que les boutons finissent toujours par
   apparaître** : la fin normale (`playToEnd`), les animations coupées
-  (`reduceMotion`, la vidéo n'est alors jamais chargée) et l'échec de lecture
-  (`status === 'error'`). Un fond décoratif ne doit jamais pouvoir retenir
-  l'action principale de l'écran en otage.
+  (`reduceMotion`, la vidéo n'est alors jamais chargée), l'échec de lecture
+  (`status === 'error'`) et le changement d'onglet avant la fin (ci-dessous). Un
+  fond décoratif ne doit jamais pouvoir retenir l'action principale de l'écran
+  en otage.
 
 L'ouverture se joue **une fois par session** : les écrans étant des onglets,
 l'accueil reste monté, donc revenir dessus depuis La Carte ne la rejoue pas.
+
+⚠️ **Changer d'onglet avant la fin de l'ouverture la termine d'un coup, pas en
+fondu.** `lazy: false` (`app/(tabs)/_layout.tsx`) garde l'accueil monté en
+permanence : sans cette sortie, quitter l'onglet en cours d'ouverture laissait
+la vidéo continuer de jouer hors écran, et les deux boutons finir leur fondu de
+2 s dans le vide. `useIsFocused()` (exporté par `expo-router`) détecte la perte
+de focus et **saute directement à l'état final** — `player.currentTime` posé à
+`player.duration`, vidéo mise en pause, les trois valeurs d'opacité (vidéo,
+bouton principal, bouton secondaire) écrites à `1` sans `withTiming` — pour
+qu'au retour sur l'accueil il n'y ait plus rien à attendre. Demande de
+Jonathan, 7 août 2026.
+
+**Les décorations purement ambiantes attendent la fin de l'ouverture pour se
+mettre en mouvement.** La guirlande (`Guirlande`, prop `active`) ne scintille
+qu'une fois `introDone` vrai — quelle que soit la sortie empruntée parmi les
+quatre ci-dessus. Avant, le scintillement démarrait dès le montage, en même
+temps que la vidéo : deux animations qui se disputaient le regard pendant
+l'ouverture. Le motif (`active?: boolean`, `true` par défaut) est réutilisable
+pour toute future décoration du même genre.
 
 **Trois choses à ne pas défaire non plus :**
 

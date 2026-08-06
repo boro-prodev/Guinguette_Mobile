@@ -11,7 +11,6 @@
  */
 import { useCallback, useMemo, useState } from 'react';
 import {
-  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -158,13 +157,14 @@ export default function CarteScreen() {
           */}
           <Text style={styles.subtitle}>Produits locaux, plats gourmands</Text>
         </Reveal>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.filters}
-          style={styles.filtersRow}
-          accessibilityLabel="Filtrer la carte"
-        >
+        {/*
+          Plus de défilement (7 août 2026, demande de Jonathan) : quatre puces
+          tiennent toujours sur une largeur de téléphone, un `ScrollView`
+          n'avait donc rien à faire ici — juste une rangée simple, sur une
+          seule ligne (pas de `flexWrap`), centrée par `justifyContent:
+          'center'` et espacée à l'identique entre les puces par `gap`.
+        */}
+        <View style={styles.filters} accessibilityLabel="Filtrer la carte">
           {MENU_FILTERS.map((item) => (
             <Chip
               key={item.id}
@@ -174,7 +174,7 @@ export default function CarteScreen() {
               onSelect={handleFilter}
             />
           ))}
-        </ScrollView>
+        </View>
       </View>
     ),
     [filter, handleFilter]
@@ -249,14 +249,16 @@ const styles = StyleSheet.create({
     color: colors.onSurfaceVariant,
     textAlign: 'center',
   },
-  filtersRow: {
-    // Les puces débordent volontairement des marges pour défiler bord à bord.
-    marginHorizontal: -spacing.gutter,
-    marginTop: spacing.md,
-  },
   filters: {
+    // Une seule ligne, jamais de retour à la ligne (demande de Jonathan,
+    // 7 août 2026) : quatre puces tiennent toujours sur une largeur de
+    // téléphone. `gap` espace les puces à l'identique entre elles ;
+    // `justifyContent: 'center'` centre la rangée entière, à égale distance
+    // des deux bords.
+    flexDirection: 'row',
+    justifyContent: 'center',
     gap: spacing.sm,
-    paddingHorizontal: spacing.gutter,
+    marginTop: spacing.md,
   },
   /**
    * La barre d'onglets n'est pas en position absolue (`app/(tabs)/_layout.tsx`) :
