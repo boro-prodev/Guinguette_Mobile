@@ -128,6 +128,19 @@ export const TURN = {
   foldOpacity: 0.3,
   /** Part de la largeur sur laquelle cette flexion se dissipe. */
   foldSpread: 0.45,
+  /**
+   * Le liseré du bord de la feuille — un cheveu (`hairlineWidth`, soit un
+   * pixel physique), à l'opacité près.
+   *
+   * Il existe parce que les deux feuilles ont le **même fond crème** : là où
+   * le bord de celle qui bouge passe sur du crème, il est invisible, et
+   * l'arrondi des angles avec lui. C'était l'ombre portée qui dessinait ce
+   * bord ; en la retirant, on a retiré ce qui le rendait lisible. Le liseré le
+   * rend, **sans rien reposer sur la page du dessous**.
+   */
+  edgeOpacity: 0.9,
+  /** Part du glissement au bout de laquelle le liseré atteint sa pleine force. */
+  edgeFadeIn: 0.06,
   /** Retour en place quand le seuil n'a pas été franchi. */
   spring: { damping: 20, stiffness: 210, mass: 0.9 },
   /**
@@ -447,12 +460,15 @@ function Sheet({
         {children}
       </ScrollView>
 
-      {/* La flexion n'existe que sur la feuille qui bouge — jamais sur celle
-          qu'on découvre, qui se montre à sa vraie couleur. */}
+      {/* La flexion et le liseré n'existent que sur la feuille qui bouge —
+          jamais sur celle qu'on découvre, qui se montre à sa vraie couleur.
+          Le liseré passe en dernier : il reste net, sans être assombri par la
+          flexion. */}
       {isTop && (
         <>
           <Fold side="left" progress={progress} />
           <Fold side="right" progress={progress} />
+          <Edge progress={progress} />
         </>
       )}
     </Animated.View>
@@ -495,6 +511,29 @@ function Fold({ side, progress }: { side: 'left' | 'right'; progress: SharedValu
   );
 }
 
+/**
+ * Le bord de la feuille, tracé au cheveu.
+ *
+ * ⚠️ **Il ne peut pas vivre sur la feuille elle-même**, en `borderWidth`
+ * permanent : au repos, la feuille couvre exactement le cadre, et son contour
+ * dessinerait un rectangle autour de toute la zone — une boîte, pas une page.
+ * Il est donc porté par un calque à part, dont seule l'**opacité** est animée
+ * (la voie rapide de Reanimated), et qui n'est monté que sur la feuille du
+ * dessus. À l'arrêt : invisible.
+ *
+ * La bordure d'une vue React Native se dessine **à l'intérieur** de ses bornes :
+ * elle échappe donc au `overflow: 'hidden'` arrondi de la feuille, et ses
+ * angles épousent exactement les siens.
+ */
+function Edge({ progress }: { progress: SharedValue<number> }) {
+  const edgeStyle = useAnimatedStyle(() => {
+    const amount = Math.abs(progress.value) / TURN.edgeFadeIn;
+    return { opacity: (amount > 1 ? 1 : amount) * TURN.edgeOpacity };
+  });
+
+  return <Animated.View pointerEvents="none" style={[styles.edge, edgeStyle]} />;
+}
+
 const styles = StyleSheet.create({
   frame: {
     flex: 1,
@@ -532,5 +571,15 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
+  },
+  edge: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.outlineVariant,
+    borderRadius: radius.md,
   },
 });

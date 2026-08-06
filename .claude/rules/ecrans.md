@@ -87,9 +87,17 @@ dessous — le brief d'origine demandait cette ombre, l'écran a tranché contre
 **La feuille a les angles arrondis** (`radius.md`, le même cran que les affiches
 et les panneaux qu'elle contient), avec `overflow: 'hidden'` — sans lui, seul le
 fond serait arrondi et le dégradé de flexion garderait ses coins carrés
-par-dessus. L'arrondi ne se lit que là où le bord de la feuille passe sur un
-contenu contrasté (une photo de la page du dessous) : entre deux fonds crème, il
-reste invisible, et c'est normal.
+par-dessus.
+
+**Et son bord est tracé au cheveu** (`Edge`, `StyleSheet.hairlineWidth` en
+`outlineVariant`), parce que les deux feuilles ont le même fond crème : sans ce
+liseré, le bord de celle qui bouge — et l'arrondi de ses angles — est invisible
+partout où il ne passe pas sur une photo. C'est l'ombre portée qui jouait ce
+rôle avant d'être retirée. ⚠️ **Le liseré ne peut pas être un `borderWidth`
+permanent sur la feuille** : au repos, elle couvre exactement le cadre et son
+contour dessinerait une boîte autour de toute la zone. Il vit donc sur un calque
+à part, monté sur la seule feuille du dessus, dont l'opacité suit le glissement
+et vaut 0 à l'arrêt.
 
 **Le feuilletage boucle** (la dernière page ramène à la première), donc pas de
 butée ni de résistance aux bords — le jour où l'on passerait en butée, la
