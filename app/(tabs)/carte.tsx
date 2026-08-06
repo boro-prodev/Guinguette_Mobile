@@ -3,12 +3,21 @@
  * Les blocs sont rendus par une FlatList unique : filtrer
  * ne fait que réduire les données, la mise en page ne se démonte pas.
  *
- * Un bouton de réservation **flotte au défilement** (chantier 3) : absent en
- * haut de page, il se pose dès qu'on commence à parcourir la carte — au moment
- * où l'envie se crée — et s'efface quand on remonte.
+ * Un bouton de réservation **se pose au bout de la catégorie** : absent tant
+ * qu'il reste à lire, il apparaît quand le dernier bloc finit d'entrer à
+ * l'écran — au moment où l'envie est faite — et s'efface si on remonte. Sur une
+ * catégorie assez courte pour tenir d'un écran, il est là d'emblée : on est
+ * déjà au bout.
  */
 import { useCallback, useMemo, useState } from 'react';
-import { FlatList, ScrollView, StyleSheet, Text, View, type ListRenderItem } from 'react-native';
+import {
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+  type LayoutChangeEvent,
+  type ListRenderItem,
+} from 'react-native';
 import Animated, {
   ReduceMotion,
   runOnJS,
@@ -26,17 +35,24 @@ import { colors, fonts, radius, shadows, spacing, type } from '@/constants/theme
 import { MENU_FILTERS, menuBlocks, type MenuBlock, type MenuCategory } from '@/data/menu';
 import { useReserve } from '@/features/reserve/ReserveProvider';
 
-/**
- * Défilement à partir duquel le bouton se pose. Assez haut pour qu'il ne
- * clignote pas au moindre frémissement du doigt, assez bas pour être là dès le
- * premier plat dépassé.
- */
-const SHOW_AT = 220;
 /** Course du bouton à l'apparition : il monte, il n'apparaît pas sur place. */
 const RISE = 24;
 const FADE_MS = 200;
 /** Hauteur réservée sous le dernier bloc pour que le bouton ne le masque pas. */
 const CTA_CLEARANCE = 96;
+/**
+ * Distance au bas du contenu à partir de laquelle le bouton se pose. Elle vaut
+ * exactement le vide réservé sous le dernier bloc : il apparaît donc au moment
+ * précis où ce dernier bloc finit d'entrer à l'écran, et pas avant.
+ *
+ * ⚠️ **Ce n'est plus un seuil de défilement.** Le bouton se posait après
+ * 220 px parcourus — ce qui marchait quand La Carte était une longue liste,
+ * mais plus du tout depuis qu'on ne voit **qu'une catégorie à la fois**
+ * (6 août 2026) : trois des quatre catégories ne défilent pas de 220 px, et le
+ * bouton n'y apparaissait donc **jamais**. Le repère est désormais la fin du
+ * contenu, quelle que soit sa hauteur.
+ */
+const END_MARGIN = spacing.md + CTA_CLEARANCE;
 
 export default function CarteScreen() {
   // On entre sur la première puce, « À partager » — il n'y a plus de « Tout »
@@ -55,6 +71,16 @@ export default function CarteScreen() {
   const shown = useSharedValue(0);
   const [reachable, setReachable] = useState(false);
 
+  /**
+   * Les trois mesures dont dépend « est-on au bout ? ». Elles vivent en
+   * valeurs partagées parce que deux d'entre elles n'arrivent que par des
+   * événements JS (`onLayout`, `onContentSizeChange`) alors que la troisième
+   * change à chaque image de défilement, sur le thread UI.
+   */
+  const offsetY = useSharedValue(0);
+  const viewport = useSharedValue(0);
+  const content = useSharedValue(0);
+
   const blocks = useMemo(() => menuBlocks.filter((b) => b.category === filter), [filter]);
 
   const handleFilter = useCallback((value: string) => setFilter(value as MenuCategory), []);
@@ -64,17 +90,48 @@ export default function CarteScreen() {
     []
   );
 
+  /**
+   * Le verdict, à partir des trois mesures. Worklet : il est appelé aussi bien
+   * depuis le gestionnaire de défilement (thread UI) que depuis `onLayout` et
+   * `onContentSizeChange` (thread JS) — une catégorie trop courte pour défiler
+   * n'émet **aucun** événement de défilement, et c'est justement là que le
+   * bouton doit se poser d'emblée.
+   */
+  const evaluate = useCallback(() => {
+    'worklet';
+    if (viewport.value <= 0 || content.value <= 0) return;
+    const next = offsetY.value + viewport.value >= content.value - END_MARGIN ? 1 : 0;
+    // Le passage vers React n'a lieu qu'aux BASCULES, pas à chaque image :
+    // sans ce garde, un simple défilement inonderait le thread JS.
+    if (next === shown.value) return;
+    shown.value = next;
+    runOnJS(setReachable)(next === 1);
+  }, [content, offsetY, shown, viewport]);
+
   const onScroll = useAnimatedScrollHandler({
     onScroll: (event) => {
-      const next = event.contentOffset.y > SHOW_AT ? 1 : 0;
-      // Le passage vers React n'a lieu qu'aux BASCULES, pas à chaque image :
-      // sans ce garde, un simple défilement inonderait le thread JS.
-      if (next !== shown.value) {
-        shown.value = next;
-        runOnJS(setReachable)(next === 1);
-      }
+      offsetY.value = event.contentOffset.y;
+      viewport.value = event.layoutMeasurement.height;
+      content.value = event.contentSize.height;
+      evaluate();
     },
   });
+
+  const onLayout = useCallback(
+    (event: LayoutChangeEvent) => {
+      viewport.value = event.nativeEvent.layout.height;
+      evaluate();
+    },
+    [evaluate, viewport]
+  );
+
+  const onContentSizeChange = useCallback(
+    (_width: number, height: number) => {
+      content.value = height;
+      evaluate();
+    },
+    [content, evaluate]
+  );
 
   const ctaStyle = useAnimatedStyle(() => {
     const timing = { duration: FADE_MS, reduceMotion: ReduceMotion.System };
@@ -133,6 +190,8 @@ export default function CarteScreen() {
         contentContainerStyle={styles.list}
         showsVerticalScrollIndicator={false}
         onScroll={onScroll}
+        onLayout={onLayout}
+        onContentSizeChange={onContentSizeChange}
         scrollEventThrottle={16}
         removeClippedSubviews
         maxToRenderPerBatch={6}

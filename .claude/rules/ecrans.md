@@ -191,12 +191,30 @@ rangée `flexDirection: 'row'`.
 
 ## Le bouton flottant de La Carte
 
-Absent en haut de page, il se pose au défilement (`SHOW_AT`) et s'efface quand
-on remonte. Trois choses à ne pas défaire :
+Il se pose **au bout de la catégorie** : absent tant qu'il reste à lire, il
+apparaît quand le dernier bloc finit d'entrer à l'écran, et s'efface si on
+remonte.
 
+⚠️ **Ce n'est plus un seuil de défilement, et ça ne peut plus l'être.** Il se
+posait après 220 px parcourus (`SHOW_AT`), ce qui marchait quand La Carte était
+une longue liste. Depuis qu'on ne voit **qu'une catégorie à la fois** (6 août
+2026), trois des quatre catégories ne défilent pas de 220 px : le bouton n'y
+apparaissait **jamais**. Le repère est désormais la distance au bas du contenu,
+et il vaut le vide réservé sous le dernier bloc (`END_MARGIN`
+= `spacing.md + CTA_CLEARANCE`) — le bouton arrive donc au moment précis où ce
+dernier bloc finit d'entrer, jamais avant.
+
+Quatre choses à ne pas défaire :
+
+- ⚠️ **Le verdict doit aussi se calculer hors défilement.** Une catégorie trop
+  courte pour défiler n'émet **aucun** événement de défilement — et c'est
+  justement là que le bouton doit être présent d'emblée, puisqu'on est déjà au
+  bout. Le calcul est donc appelé depuis trois endroits : le gestionnaire de
+  défilement (thread UI), `onLayout` et `onContentSizeChange` (thread JS). Il
+  porte `'worklet'` pour pouvoir l'être des deux côtés.
 - **La bascule ne traverse vers React qu'aux changements d'état**, pas à chaque
   image : le suivi vit dans un `useAnimatedScrollHandler` (thread UI) et ne
-  passe par `runOnJS` que lorsque le seuil est franchi. Sans ce garde, un simple
+  passe par `runOnJS` que lorsque le verdict change. Sans ce garde, un simple
   défilement inonderait le thread JS.
 - **Invisible veut dire inatteignable** — `pointerEvents` *et*
   `accessibilityElementsHidden`, même règle que les deux appels à l'action de
