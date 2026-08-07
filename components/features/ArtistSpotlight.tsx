@@ -8,11 +8,11 @@
  * même feuille**. L'`activeEventId` qui reliait les deux carrousels n'a plus
  * d'objet — c'est la page qui les tient ensemble.
  *
- * ⚠️ **Pas de `Countdown` ici** — demande de Jonathan, 6 août 2026 : le
- * pastille « J-12 · 5 h » et son point qui bat n'apparaissent que sur la
- * première affiche (« À l'affiche », `EventSpotlight`). La répéter sur celle
- * de l'artiste doublait l'information sans rien ajouter, et faisait battre
- * deux points sur la même page.
+ * ⚠️ **Pas de compte à rebours ici** — n'en a jamais eu depuis le 6 août
+ * 2026 (la répéter sur l'affiche de l'artiste doublait l'information de « À
+ * l'affiche » sans rien ajouter). Le composant qui le portait,
+ * `EventSpotlight`, ne l'a lui-même plus depuis le 7 août 2026 — voir
+ * `.claude/rules/ecrans.md`.
  *
  * ⚠️ **Plus de badge de style ni de sous-ligne sur l'affiche** — demande de
  * Jonathan, 7 août 2026 : seul le nom de l'artiste reste, posé dans un

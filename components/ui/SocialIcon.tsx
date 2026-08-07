@@ -1,14 +1,21 @@
 /**
- * Icônes des trois liens de « Retrouver l'artiste » (`ArtistDetailPane.tsx`).
+ * Icônes de marque, en vraies couleurs — les liens de « Retrouver l'artiste »
+ * (`ArtistDetailPane.tsx`).
  *
  * ⚠️ **Seul endroit de l'app où une icône ne prend pas sa couleur du thème
  * courant.** Facebook et Instagram ont une identité de couleur fixe, propre à
- * la marque — leur donner la teinte de la soirée (comme le reste du jeu
+ * la marque — leur donner la teinte du thème ambiant (comme le reste du jeu
  * d'icônes, `Icon.tsx`, à trait unique) les rendrait méconnaissables. Elles
  * sont donc dessinées ici, à part, avec leurs vraies couleurs. Le globe du
  * site web n'est pas une marque : il reste sur le principe habituel (trait
- * fin, couleur reçue en prop), simplement plus parlant que l'ancien pictogramme
- * de lien en chaîne — demande de Jonathan, 7 août 2026.
+ * fin, couleur reçue en prop), simplement plus parlant que l'ancien
+ * pictogramme de lien en chaîne — demande de Jonathan, 7 août 2026.
+ *
+ * ⚠️ **Avait aussi un `maps` (Google Maps redessiné à la main)** — retiré le
+ * 7 août 2026 dès que Jonathan a fourni le vrai fichier du logo
+ * (`assets/images/googlemaps.webp`, utilisé directement par
+ * `app/(tabs)/infos.tsx`). Un logo redessiné n'a de sens que tant qu'on n'a
+ * pas le vrai fichier — pas après.
  */
 import { memo } from 'react';
 import type { ColorValue } from 'react-native';

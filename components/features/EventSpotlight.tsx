@@ -17,7 +17,6 @@ import { StyleSheet } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
 import { Text, Theme, View, XStack, YStack } from 'tamagui';
 
-import { Countdown } from '@/components/features/Countdown';
 import { EventDetailPane } from '@/components/features/EventDetailPane';
 import {
   Kicker,
@@ -72,11 +71,19 @@ function EventSpotlightComponent({ kicker, event }: EventSpotlightProps) {
             </View>
           </XStack>
 
-          {/* Sur la photo, c'est le thème « lampion » qui donne le voile sombre
-              et le texte clair — aucune couleur écrite ici. */}
+          {/*
+            Sur la photo, c'est le thème « lampion » qui donne le voile sombre
+            et le texte clair — aucune couleur écrite ici.
+
+            ⚠️ Plus de pastille de compte à rebours ici — demande de Jonathan,
+            7 août 2026 : la pastille qui clignotait (« J-7 · 18 h ») a sauté.
+            `Countdown` (`components/features/Countdown.tsx`) n'a plus aucun
+            appelant dans l'app et a été supprimé avec elle, ainsi que
+            `countdownTo`/`formatCountdown` dans `utils/date.ts`, restés sans
+            utilisateur.
+          */}
           <Theme name="lampion">
             <YStack gap="$base" padding="$md">
-              <Countdown startsAt={event.startsAt} />
               <PosterTitle>{event.title}</PosterTitle>
               <PosterMeta>{`${event.artist} · ${event.when}`}</PosterMeta>
             </YStack>

@@ -17,6 +17,11 @@ Menu, prix, dates de soirées, horaires, adresse (Rue de Revin 16,
 modifiable sans validation métier. Ne pas s'inquiéter de leur exactitude ; les
 garder plausibles et en français.
 
+⚠️ `venue.email`/`venue.website` ont existé un temps le 7 août 2026, pour une
+version de la carte de contact d'Infos qui les affichait — retirés le jour
+même quand cette carte s'est resserrée sur l'essentiel (appeler, SMS,
+localisation). Ne pas les rajouter sans un vrai appelant.
+
 **Elles sont centralisées dans `data/`** — adapter la démo pour un prospect
 consiste à éditer `menu.ts`, `events.ts`, `venue.ts`, **jamais les écrans**.
 
@@ -51,18 +56,14 @@ dans `EventSpotlight`/`EventDetailPane`.
 
 Chaque `Artist` reste relié à une soirée précise de `events.ts` via
 `eventId` — passée ou à venir, la démo simule un vrai calendrier. Cette
-référence alimente le compte à rebours de l'affiche d'Artist Spot ; rien
-n'est dupliqué (pas de `startsAt`/`when` propre à `Artist`).
+référence alimente le titre, la date et le thème affichés sur l'affiche
+d'Artist Spot ; rien n'est dupliqué (pas de `startsAt`/`when` propre à
+`Artist`).
 
 `website?` / `instagram?` / `facebook?` restent vides tant qu'aucune URL
 réelle n'est fournie : chaque pastille de lien du panneau s'affiche alors
 désactivée plutôt que de risquer un lien mort en pleine démo client — même
 posture que le reste de la démo.
-
-⚠️ Un artiste lié à une soirée **passée** ne doit jamais afficher de compte à
-rebours (`Countdown`) : `utils/date.ts` → `formatCountdown` répond
-« C'est maintenant ! » sans limite de durée une fois `startsAt` dépassé.
-`ArtistSpotlight` ne monte `<Countdown>` que si la soirée liée est à venir.
 
 ## Parcours simulés
 
@@ -83,8 +84,27 @@ jamais la rendre illisible en l'atténuant.
 `AsyncStorage`, toujours avec le préfixe **`demo:`** (`hooks/useDemoFlag.ts`
 pour les booléens, `demo:reservation` pour la feuille de réservation).
 
+⚠️ **Exception volontaire : « J'y serai » (`EventDetailPane`) ne persiste
+plus.** Il passait par `useDemoFlag('rsvp:<id>')` jusqu'au 7 août 2026 —
+retiré ce jour-là, demande de Jonathan : coché une fois pendant un essai, il
+restait coché à la relance suivante de l'app, y compris pour démarrer une
+démo devant un nouveau prospect. `enabled` est redevenu un simple `useState`
+local dans `EventDetailContent` : le bouton bascule toujours normalement
+pendant que l'écran reste ouvert (toast, jauge d'ambiance qui bondit), mais
+repart à `false` à chaque montage. Ne pas le repasser sur `useDemoFlag` sans
+revalider ce choix.
+
 ## Seule sortie externe admise
 
-`Linking.openURL` pour ouvrir un lien dans le navigateur — le bouton « M'y
-rendre » de l'écran Infos crée le précédent. Ça reste dans le cadre : on n'envoie
-rien, on ouvre un lien.
+`Linking.openURL` pour ouvrir un lien — Google Maps (`venue.mapsUrl`) crée le
+précédent. La carte de contact d'Infos (`app/(tabs)/infos.tsx`) l'étend à deux
+autres schémas, chacun sur sa propre ligne (`ContactLine`) :
+
+| Schéma | Depuis | Ouvre |
+|---|---|---|
+| `tel:${venue.phoneDial}` | Ligne téléphone | Le clavier d'appel, numéro déjà composé |
+| `sms:${venue.phoneDial}` | Ligne « Envoyer un SMS » | L'app de messages, numéro déjà rempli |
+
+`venue.phoneDial` est le format sans espaces prévu pour ça dans
+`data/venue.ts`. Toujours dans le cadre : on n'envoie rien, on ouvre une app
+système avec un champ pré-rempli, l'utilisateur reste maître d'envoyer ou non.

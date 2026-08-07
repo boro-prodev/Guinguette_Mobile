@@ -82,10 +82,10 @@ automatiquement enveloppée dans `<Button.Text>`.
 voile teinté par `$solid` du thème courant, pensé pour se poser sur une photo
 comme `lampion` avant lui (texte toujours clair, via `$surface` et non
 `$onOutline` — ce dernier vire sombre sur `dusk`/`neutral`, illisible une fois
-flouté). `emphasis` y ajoute un anneau ambré permanent qui bat (même
-mécanique que le point du `Countdown`) : de quoi garder un rang principal
-quand deux boutons `glass` partagent sinon le même traitement, sans revenir à
-un aplat de couleur.
+flouté). `emphasis` y ajoute un anneau ambré permanent qui bat (un
+`withRepeat`/`withTiming` en miroir sur l'opacité) : de quoi garder un rang
+principal quand deux boutons `glass` partagent sinon le même traitement, sans
+revenir à un aplat de couleur.
 
 ⚠️ **Sur Android, `tone="glass"` ne floute QUE si l'appelant passe
 `blurTarget`.** Depuis expo-blur 57, `dimezisBlurView` ne floute pas « ce qu'il

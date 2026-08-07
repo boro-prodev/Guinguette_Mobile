@@ -141,7 +141,10 @@ const styles = StyleSheet.create({
   },
   title: {
     ...type.displayLg,
-    color: colors.primary,
+    // Noir, demande de Jonathan, 7 août 2026 — `colors.onSurface` est le texte
+    // « noir » du design system (même token que le titre de La Carte et les
+    // titres de cartes d'Infos), pas un `#000000` inédit posé en dur.
+    color: colors.onSurface,
     textAlign: 'center',
     marginBottom: spacing.sm,
   },

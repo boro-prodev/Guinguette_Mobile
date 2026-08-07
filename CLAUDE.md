@@ -79,7 +79,6 @@ automatiquement selon l'intention (`.claude/skills/environnement/`).
 | `components/features/SpotlightParts.tsx` | L'habillage commun aux deux sections de Soirées (cadre d'affiche, titraille, panneau à ombre, pastilles). **Aucune mécanique** — le carrousel qu'il portait a été retiré |
 | `components/features/EventSpotlight.tsx` / `EventDetailPane.tsx` | « À l'affiche » : la soirée de la page — affiche, description, programme, jauge d'ambiance, tarif, bouton « J'y serai » |
 | `components/features/ArtistSpotlight.tsx` / `ArtistDetailPane.tsx` | « Artist Spot » : l'artiste de **cette même soirée** (`data/artists.ts`, relié par `eventId`) — bio, style musical, liens site/réseaux sociaux |
-| `components/features/Countdown.tsx` | Compte à rebours vivant (retick chaque minute, point qui bat) |
 | `components/features/HypeGauge.tsx` | Jauge d'ambiance d'une soirée (`data/events.ts` → `hype`) — pousse depuis la gauche à l'apparition, bondit d'un cran quand on tape « J'y serai » |
 | `features/reserve/` | Parcours de réservation simulé (bottom sheet 3 étapes) |
 | `data/` | Données placeholder : `menu.ts`, `events.ts`, `artists.ts`, `venue.ts` |

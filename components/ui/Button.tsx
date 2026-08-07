@@ -56,10 +56,9 @@ export type ButtonTone = 'solid' | 'soft' | 'outline' | 'ghost' | 'glass';
 const HALO_MS = 560;
 
 /**
- * Un aller du battement de l'anneau `emphasis` — exactement la durée du point
- * du compte à rebours (`PULSE_MS` dans `Countdown.tsx`), repris ici à
- * l'identique : « la même ampoule qui bat », juste posée sur un anneau plutôt
- * que sur un point.
+ * Un aller du battement de l'anneau `emphasis` — « la même ampoule qui bat »
+ * que le reste des points/anneaux décoratifs de l'app, juste posée sur un
+ * anneau plutôt que sur un point.
  */
 const EMPHASIS_PULSE_MS = 1100;
 
@@ -235,12 +234,11 @@ function ButtonIcon({ name, strokeWidth = 2 }: { name: IconName; strokeWidth?: n
 }
 
 /**
- * L'anneau `emphasis`, qui bat — exactement la même mécanique que le point du
- * compte à rebours (`Countdown.tsx`) : un `withRepeat`/`withTiming` en
- * miroir, même easing, même durée. `useReducedMotion` coupe l'animation, pas
- * l'anneau lui-même : il reste posé, à pleine opacité, immobile — le signal
- * de hiérarchie doit survivre à `prefers-reduced-motion`, seul son mouvement
- * lui est propre à sacrifier.
+ * L'anneau `emphasis`, qui bat : un `withRepeat`/`withTiming` en miroir sur
+ * l'opacité. `useReducedMotion` coupe l'animation, pas l'anneau lui-même : il
+ * reste posé, à pleine opacité, immobile — le signal de hiérarchie doit
+ * survivre à `prefers-reduced-motion`, seul son mouvement lui est propre à
+ * sacrifier.
  */
 function EmphasisRing() {
   const reduceMotion = useReducedMotion();

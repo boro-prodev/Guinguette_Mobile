@@ -1,22 +1,62 @@
 /**
- * Infos Pratiques — adresse, contact et horaires.
- * Contenu court et statique : une ScrollView suffit, pas de liste virtualisée.
+ * Infos Pratiques — une carte de contact, puis les horaires.
+ *
+ * ⚠️ **Quatrième version de la carte de contact en une session (7 août
+ * 2026)** — après le hero-photo d'origine, la carte de visite sombre (titre,
+ * sous-titre, séparateur), puis une version avec la photo d'ambiance de
+ * l'accueil en fond. Cette dernière est repartie : « ça ne donne pas bien »,
+ * retour à une carte simple, au même langage que la carte Horaires juste en
+ * dessous (fond clair, bordure fine). Ce qui reste : un titre court (« Infos
+ * Pratiques », sans sous-titre) et trois lignes de contact essentielles
+ * (appeler, SMS, localisation), chacune avec l'icône au trait du projet
+ * plutôt qu'un vrai emoji Unicode — le tout centré **verticalement** dans la
+ * carte, pas seulement horizontalement.
+ *
+ * ⚠️ **« Émoji » demandés, icônes livrées — délibérément.** Un vrai emoji
+ * (📞, 💬, 📍) est un glyphe **couleur**, dessiné différemment par la police
+ * emoji de chaque OS (Apple Color Emoji ≠ Noto Color Emoji) : il ne peut pas
+ * être rendu « noir et blanc » de façon fiable, et ne rendra jamais
+ * identique sur iPhone et Android — l'inverse de ce qui était demandé.
+ * `Icon.tsx` (`call`, `message`, `location`) est le jeu de pictogrammes du
+ * projet, un seul trait, une seule couleur, un seul rendu quelle que soit la
+ * plateforme : c'est la version qui tient vraiment la promesse « compatible
+ * iPhone et Android, en noir et blanc ».
  */
 import { Image } from 'expo-image';
-import { LinearGradient } from 'expo-linear-gradient';
-import { useCallback } from 'react';
-import { Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useCallback, useState } from 'react';
+import { Linking, ScrollView, StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native';
 
-import { Button } from '@/components/ui/Button';
-import { Icon } from '@/components/ui/Icon';
+import { Icon, type IconName } from '@/components/ui/Icon';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { Reveal } from '@/components/ui/Reveal';
 import { colors, radius, shadows, spacing, tabularNums, type } from '@/constants/theme';
 import { openingHours, venue } from '@/data/venue';
-import { useReserve } from '@/features/reserve/ReserveProvider';
 
 export default function InfosScreen() {
-  const { open } = useReserve();
+  /**
+   * Demande de Jonathan, 7 août 2026 : la carte de contact (photo) doit faire
+   * la même hauteur que la carte Horaires juste en dessous. La hauteur des
+   * Horaires dépend du rendu réel des polices (rien de fixe à recopier), donc
+   * on la MESURE (`onLayout`, ajouté à `Reveal`) plutôt que de deviner un
+   * nombre — exact quel que soit l'appareil, contrairement à une valeur en
+   * dur qui aurait fini par diverger.
+   */
+  const [hoursHeight, setHoursHeight] = useState<number>();
+  const onHoursLayout = useCallback((event: LayoutChangeEvent) => {
+    setHoursHeight(event.nativeEvent.layout.height);
+  }, []);
+
+  const callPhone = useCallback(() => {
+    Linking.openURL(`tel:${venue.phoneDial}`).catch(() => {
+      // Aucune app de téléphonie disponible : on ne casse pas la démo pour autant.
+    });
+  }, []);
+
+  const smsPhone = useCallback(() => {
+    Linking.openURL(`sms:${venue.phoneDial}`).catch(() => {
+      // Même filet que `callPhone` — un appareil sans app SMS reste possible.
+    });
+  }, []);
 
   const openMaps = useCallback(() => {
     Linking.openURL(venue.mapsUrl).catch(() => {
@@ -26,84 +66,68 @@ export default function InfosScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-      <Reveal fadeOnly style={styles.hero}>
-        <Image
-          source={require('../../assets/images/presentation-global.webp')}
-          style={styles.heroImage}
-          contentFit="cover"
-          priority="high"
-          accessibilityLabel="Vue d’ensemble de la guinguette au bord de l’eau"
-        />
-        <LinearGradient
-          pointerEvents="none"
-          colors={['rgba(12,23,32,0.55)', 'rgba(240,173,74,0.12)']}
-          start={{ x: 0, y: 1 }}
-          end={{ x: 0, y: 0 }}
-          style={StyleSheet.absoluteFill}
-        />
-        <View style={styles.heroText}>
-          <View style={styles.heroBadge}>
-            <Text style={styles.heroBadgeLabel}>Découvrir</Text>
-          </View>
-          <Text style={styles.heroTitle}>Infos Pratiques</Text>
+      <Reveal
+        fadeOnly
+        style={[styles.card, shadows.card, hoursHeight != null && { height: hoursHeight }]}
+      >
+        <Text style={styles.cardTitle}>Infos Pratiques</Text>
+
+        <View style={styles.contactList}>
+          <ContactLine
+            icon="call"
+            label={venue.phone}
+            onPress={callPhone}
+            accessibilityLabel={`Appeler ${venue.phone}`}
+            accessibilityHint="Ouvre le clavier d’appel, numéro déjà composé"
+          />
+          <ContactLine
+            icon="message"
+            label="Envoyer un SMS"
+            onPress={smsPhone}
+            accessibilityLabel="Envoyer un SMS"
+            accessibilityHint="Ouvre l’application de messages, numéro déjà rempli"
+          />
+          <ContactLine
+            icon="location"
+            label={`${venue.street}, ${venue.city}`}
+            onPress={openMaps}
+            accessibilityLabel="Ouvrir l’itinéraire dans Google Maps"
+          />
+
+          {/*
+            Demande de Jonathan, 7 août 2026 : « bien indiquer ce qu'il se
+            passe » sous l'adresse — le vrai logo Google Maps (fourni par
+            Jonathan, converti en WebP — voir `assets/images/`) plutôt qu'une
+            simple icône de lieu, pour que l'action soit reconnaissable au
+            premier coup d'œil. Remplace le logo redessiné à la main
+            (`SocialIcon`, name `maps`, retiré du même coup) du premier essai
+            — celui-ci est le vrai logo, pas une reconstitution. Même geste
+            que la ligne du dessus (`openMaps`) : un second déclencheur, plus
+            explicite. Fond blanc opaque propre au fichier d'origine (un
+            `.jpg` fourni sans transparence, la conversion WebP ne lui en
+            invente pas) : une bordure fine (`mapsBadge`) l'entoure pour qu'il
+            ne se fonde pas dans le fond clair de la carte.
+          */}
+          <PressableScale
+            accessibilityRole="button"
+            accessibilityLabel="Ouvrir dans Google Maps"
+            accessibilityHint="Ouvre l’itinéraire dans Google Maps"
+            scaleTo={0.96}
+            onPress={openMaps}
+            style={styles.mapsBadge}
+          >
+            <Image
+              source={require('../../assets/images/googlemaps.webp')}
+              style={styles.mapsLogo}
+              contentFit="contain"
+              accessibilityLabel="Logo Google Maps"
+            />
+          </PressableScale>
         </View>
       </Reveal>
 
-      {/* Nous trouver */}
-      <Reveal delay={100} style={[styles.card, shadows.card]}>
-        <View style={styles.cardHeader}>
-          <Icon name="location" size={24} color={colors.primary} />
-          <View style={styles.cardHeaderText}>
-            <Text style={styles.cardTitle}>Nous Trouver</Text>
-            <Text style={styles.address}>{venue.street}</Text>
-            <Text style={styles.city}>{venue.city}</Text>
-          </View>
-        </View>
-
-        <Image
-          source={require('../../assets/images/presentation-centre.webp')}
-          style={styles.map}
-          contentFit="cover"
-          accessibilityLabel="Vue du site de la guinguette"
-          cachePolicy="memory-disk"
-        />
-
-        <Button
-          full
-          accessibilityLabel='Ouvrir l’itinéraire dans Google Maps'
-          onPress={openMaps}
-        >
-          <Button.Icon name="directions" />
-          <Button.Text>M’y rendre</Button.Text>
-        </Button>
-      </Reveal>
-
-      {/* Contact */}
-      <Reveal delay={200} style={[styles.card, shadows.card]}>
-        <View style={styles.cardHeader}>
-          <Icon name="call" size={24} color={colors.secondary} />
-          <Text style={styles.cardTitle}>Contact</Text>
-        </View>
-
-        <PressableScale
-          accessibilityRole="button"
-          accessibilityLabel={`Réserver une table — ${venue.phone}`}
-          scaleTo={0.97}
-          onPress={open}
-          style={styles.phoneBlock}
-        >
-          <Text style={styles.phoneLead}>Réservez votre table</Text>
-          <Text style={styles.phone}>{venue.phone}</Text>
-        </PressableScale>
-      </Reveal>
-
-      {/* Horaires */}
-      <Reveal delay={300} style={[styles.card, shadows.card]}>
-        <View style={styles.cardHeader}>
-          <Icon name="clock" size={24} color={colors.tertiary} />
-          <Text style={styles.cardTitle}>Horaires</Text>
-        </View>
-
+      <Reveal delay={150} onLayout={onHoursLayout} style={[styles.hoursCard, shadows.card]}>
+        <Text style={styles.hoursTitle}>Horaires</Text>
         <View>
           {openingHours.map((row, index) => (
             <View
@@ -126,6 +150,34 @@ export default function InfosScreen() {
   );
 }
 
+type ContactLineProps = {
+  icon: IconName;
+  label: string;
+  onPress: () => void;
+  accessibilityLabel: string;
+  accessibilityHint?: string;
+};
+
+/** Une ligne de contact tappable — pas un `Button` : ça se lit comme du texte,
+ *  pas comme une action étiquetée (voir `.claude/rules/design-system.md`,
+ *  « trois primitives tactiles »). `PressableScale` est la zone tactile brute
+ *  du projet, exactement ce rôle-là. */
+function ContactLine({ icon, label, onPress, accessibilityLabel, accessibilityHint }: ContactLineProps) {
+  return (
+    <PressableScale
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
+      accessibilityHint={accessibilityHint}
+      scaleTo={0.97}
+      onPress={onPress}
+      style={styles.contactRow}
+    >
+      <Icon name={icon} size={20} color={colors.primary} />
+      <Text style={styles.contactText}>{label}</Text>
+    </PressableScale>
+  );
+}
+
 const styles = StyleSheet.create({
   content: {
     paddingHorizontal: spacing.gutter,
@@ -134,102 +186,71 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
 
-  /* Hero */
-  hero: {
-    height: 220,
-    borderRadius: radius.md,
-    overflow: 'hidden',
-    backgroundColor: colors.surfaceContainerHigh,
-  },
-  heroImage: {
-    ...StyleSheet.absoluteFill,
-  },
-  heroText: {
-    position: 'absolute',
-    left: spacing.md,
-    right: spacing.md,
-    bottom: spacing.md,
-  },
-  heroBadge: {
-    alignSelf: 'flex-start',
-    backgroundColor: colors.tertiaryContainer,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs + 2,
-    borderRadius: radius.pill,
-    marginBottom: spacing.sm,
-  },
-  heroBadgeLabel: {
-    // « Découvrir » est en casse normale : `caption`, pas le chasse de `labelSm`.
-    ...type.caption,
-    color: colors.onTertiaryContainer,
-  },
-  heroTitle: {
-    // `headlineLg` plutôt qu'un 34/40 inventé sur place : le cran existait
-    // déjà dans l'échelle, et 34 px réclamait un interligne de 41,9 px —
-    // « Infos Pratiques » y perdait le jambage de son « p » et de son « q ».
-    ...type.headlineLg,
-    color: colors.surfaceContainerLowest,
-    textShadowColor: 'rgba(12,23,32,0.45)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 10,
-  },
-
-  /* Cartes */
+  /* Carte de contact */
   card: {
-    backgroundColor: colors.surfaceContainerLow,
+    // Le contenu (titre + lignes) est centré au flex, pas par un padding
+    // fixe : `justifyContent`/`alignItems` marchent aussi bien avant que
+    // `hoursHeight` soit connu (replis sur `minHeight`) qu'une fois la
+    // hauteur mesurée appliquée — un padding fixe aurait dû être recalculé
+    // dans les deux cas.
+    minHeight: 240,
     borderRadius: radius.md,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.outlineVariant,
-    padding: spacing.md,
-    gap: spacing.md,
-  },
-  cardHeader: {
-    flexDirection: 'row',
+    backgroundColor: colors.surfaceContainerLow,
+    justifyContent: 'center',
     alignItems: 'center',
     gap: spacing.sm,
-  },
-  cardHeaderText: {
-    flex: 1,
   },
   cardTitle: {
     ...type.headlineMd,
     color: colors.onSurface,
   },
-  address: {
-    ...type.bodyLg,
-    color: colors.onSurfaceVariant,
-  },
-  city: {
-    ...type.bodyLg,
-    // Les capitales de la localité sont une présentation, pas du contenu :
-    // `venue.city` est stocké en casse normale et mis en forme ici.
-    textTransform: 'uppercase',
-    color: colors.onSurfaceVariant,
-  },
-  map: {
-    width: '100%',
-    height: 176,
-    borderRadius: radius.sm,
-    backgroundColor: colors.surfaceContainerHigh,
-  },
-  /* Contact */
-  phoneBlock: {
-    backgroundColor: colors.surfaceContainer,
-    borderRadius: radius.sm,
-    padding: spacing.md,
+  contactList: {
     alignItems: 'center',
+    gap: spacing.xs,
   },
-  phoneLead: {
-    ...type.bodyMd,
-    color: colors.onSurfaceVariant,
-    marginBottom: spacing.xs,
+  contactRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    // Zone tactile ≥ 44 px même pour une ligne icône + texte sans fond.
+    minHeight: 44,
   },
-  phone: {
-    ...type.headlineLg,
-    color: colors.primary,
+  contactText: {
+    ...type.bodyLg,
+    color: colors.onSurface,
+  },
+  mapsBadge: {
+    marginTop: spacing.xs,
+    borderRadius: radius.sm,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.outlineVariant,
+    overflow: 'hidden',
+  },
+  mapsLogo: {
+    // Ratio du fichier source (300 × 150 = 2:1), conservé pour ne pas
+    // déformer le logo — `contentFit="contain"` rend ça sans effet ici,
+    // mais autant partir d'un cadre juste plutôt que d'un carré qui rogne.
+    width: 150,
+    height: 75,
   },
 
   /* Horaires */
+  hoursCard: {
+    backgroundColor: colors.surfaceContainerLow,
+    borderRadius: radius.md,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.outlineVariant,
+    padding: spacing.md,
+    gap: spacing.sm,
+  },
+  hoursTitle: {
+    ...type.headlineMd,
+    color: colors.onSurface,
+  },
   hourRow: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -190,10 +190,15 @@ lent continue alors de glisser bien après coup : repéré par Jonathan comme un
 « impression de lag ». Passé à `'quick'` (`stiffness: 340`), qui se pose plus
 vite que la feuille ne met à tourner.
 
-**Une seule affiche porte le compte à rebours.** `ArtistSpotlight` n'a plus de
-`Countdown` depuis le 6 août 2026 : le répéter sur l'affiche de l'artiste
-doublait l'information déjà donnée par « À l'affiche », et faisait battre deux
-points ambrés sur la même page. `EventSpotlight` reste la seule source.
+⚠️ **Plus de compte à rebours du tout sur les affiches** — `Countdown`
+(`components/features/Countdown.tsx`) a existé un temps sur `EventSpotlight`
+seul (`ArtistSpotlight` ne l'avait déjà plus depuis le 6 août 2026, pour ne
+pas doubler l'information sur la même page), puis a été **supprimé**
+purement et simplement le 7 août 2026 : Jonathan trouvait la pastille qui
+clignotait (« J-7 · 18 h ») distrayante. Le composant, ainsi que
+`countdownTo`/`formatCountdown` dans `utils/date.ts`, restés sans autre
+utilisateur, ont été retirés avec lui — ne pas les réintroduire sans regarder
+si le besoin est réellement revenu.
 
 **Les réseaux de l'artiste (`ArtistDetailPane`) sont en `tone="soft"` et
 `size="md"`**, pas `ghost`/`sm` : « les mettre un peu plus en avant », demande
@@ -305,6 +310,85 @@ Quatre choses à ne pas défaire :
   parent pleine largeur : Android ne connaît que `elevation` et dessine d'après
   l'outline de la vue — avec `radius.pill`, un parent pleine largeur donne une
   pilule aussi large que l'écran, visible comme une bande grise.
+
+## Infos : une carte de contact, réduite à l'essentiel
+
+`app/(tabs)/infos.tsx` a changé **quatre fois** le 7 août 2026. Ce qui reste
+aujourd'hui, dans l'ordre des passes (utile pour ne pas revenir en arrière
+sans le savoir) :
+
+1. Hero photo + titre « Infos Pratiques », trois cartes toujours dépliées.
+2. Trois cartes en **dropdown** (accordéon, émojis, `MapPreview.tsx`).
+3. Une **carte de visite sombre** (titre, sous-titre, séparateur, lignes de
+   contact, guirlande en pied) — inspirée d'une référence graphique fournie
+   par Jonathan.
+4. La photo d'ambiance de l'accueil (`ambiance-soiree.webp`) en fond de
+   carte, plus de titre.
+5. **La version actuelle** : retour à une carte **simple**, au même langage
+   que la carte Horaires juste en dessous (fond clair `surfaceContainerLow`,
+   bordure fine) — la photo « ne donnait pas bien ». Un titre court (« Infos
+   Pratiques », sans sous-titre) et trois lignes de contact essentielles
+   (appeler, SMS, localisation), chacune avec une icône, le tout **centré
+   verticalement** dans la carte (`justifyContent: 'center'` sur `card`, pas
+   seulement `alignItems` horizontal). Chaque passe a retiré ce que la
+   précédente venait d'ajouter (`InfoCard`, `MapPreview.tsx`, le kicker de
+   marque, `venue.email`/`venue.website`, la photo et son voile) : ne pas les
+   réintroduire sans savoir qu'ils ont déjà été essayés et écartés.
+
+⚠️ **« Émoji » demandé, icônes livrées — c'est délibéré, pas une
+approximation.** Un vrai emoji Unicode (📞, 💬, 📍) est un glyphe **couleur**,
+dessiné par la police emoji du système (Apple Color Emoji ≠ Noto Color Emoji
+d'Android) : aucun moyen fiable de le rendre « noir et blanc », et son rendu
+diffère justement d'un OS à l'autre — l'inverse de ce qui était demandé
+(« compatible iPhone et Android »). `Icon.tsx` (`call`, `message`,
+`location`) est le jeu de pictogrammes du projet : un seul trait, une seule
+couleur, un rendu strictement identique quelle que soit la plateforme. C'est
+elle, pas un caractère emoji, qui tient la promesse demandée. Sur le fond
+clair de la version actuelle, ces icônes et le texte des lignes reprennent
+les couleurs standard du projet (`colors.primary`, `colors.onSurface`) — plus
+besoin de la teinte claire ni de l'ombre portée qu'exigeait la photo.
+
+**`ContactLine` (local au fichier) est un `PressableScale`, pas un
+`Button`.** Une ligne de contact se lit comme du texte accompagné d'une
+icône, pas comme une action étiquetée — même logique que la carte repliable
+de La Carte (`DishCard`). Trois lignes seulement, toutes au même poids visuel
+(pas de traitement « secondaire ») :
+
+| Ligne | Icône | Action |
+|---|---|---|
+| Téléphone (`venue.phone`) | `call` | `tel:${venue.phoneDial}` — clavier d'appel, numéro déjà composé |
+| Envoyer un SMS | `message` | `sms:${venue.phoneDial}` — appli de messages, numéro déjà rempli |
+| Adresse (`venue.street`, `venue.city`) | `location` | `venue.mapsUrl` — Google Maps |
+
+**La réservation reste joignable depuis l'en-tête**, sur cet écran comme sur
+les trois autres : ce n'est plus le rôle de cette carte, qui ne parle que de
+contact direct. **Les horaires n'ont pas bougé** à travers ces cinq passes —
+carte séparée, toujours dépliée, juste en dessous.
+
+⚠️ **La carte de contact reprend la hauteur MESURÉE de la carte Horaires**,
+pas une valeur devinée. `Reveal` (`components/ui/Reveal.tsx`) transmet
+`onLayout` — la carte Horaires y écrit sa propre hauteur rendue
+(`onHoursLayout`), et la carte de contact la reprend telle quelle dès qu'elle
+est connue (`minHeight: 240` sert de repli le temps du premier rendu). Une
+valeur en dur aurait fini par diverger au moindre changement de police, de
+`spacing` ou de contenu des horaires ; la mesure reste juste par
+construction.
+
+**Sous la ligne d'adresse, un second déclencheur : le vrai logo Google Maps**
+(`assets/images/googlemaps.webp`, fourni par Jonathan et affiché tel quel —
+pas une reconstitution). Même geste que la ligne du dessus (`openMaps`),
+juste plus explicite sur ce qui va s'ouvrir.
+
+⚠️ **Un premier essai l'avait redessiné à la main** (`SocialIcon`, name
+`maps`, même esprit que les logos Facebook/Instagram de « Retrouver
+l'artiste ») — retiré de `SocialIcon.tsx` dès que le vrai fichier est arrivé,
+le même jour. Redessiner un logo n'a de sens que tant qu'on n'a pas le vrai
+fichier ; une fois qu'on l'a, l'utiliser directement vaut toujours mieux
+qu'une approximation.
+- **Le fond blanc du badge est celui du fichier d'origine**, pas un ajout :
+  fourni en `.jpg` (sans transparence possible) puis converti en WebP, qui ne
+  lui en invente pas. Une bordure fine (`mapsBadge`) l'entoure pour qu'il ne
+  se fonde pas dans le fond clair de la carte.
 
 ## La feuille de réservation glisse depuis `onShow`, pas depuis un effet
 
