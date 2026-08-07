@@ -1,16 +1,19 @@
 /**
- * Infos Pratiques — une carte de contact, puis les horaires.
+ * Infos Pratiques — une carte de contact sur fond photo, puis les horaires.
  *
- * ⚠️ **Quatrième version de la carte de contact en une session (7 août
- * 2026)** — après le hero-photo d'origine, la carte de visite sombre (titre,
- * sous-titre, séparateur), puis une version avec la photo d'ambiance de
- * l'accueil en fond. Cette dernière est repartie : « ça ne donne pas bien »,
- * retour à une carte simple, au même langage que la carte Horaires juste en
- * dessous (fond clair, bordure fine). Ce qui reste : un titre court (« Infos
- * Pratiques », sans sous-titre) et trois lignes de contact essentielles
- * (appeler, SMS, localisation), chacune avec l'icône au trait du projet
- * plutôt qu'un vrai emoji Unicode — le tout centré **verticalement** dans la
- * carte, pas seulement horizontalement.
+ * ⚠️ **La photo a été retirée puis remise le 7 août 2026, dans la même
+ * session** — un malentendu, pas un aller-retour de goût : « enlève l'image »
+ * visait le logo Google Maps redessiné sous l'adresse (qui donnait mal), pas
+ * la photo de fond. La photo (`ambiance-soiree.webp`, la même qu'à
+ * l'accueil) reste donc en fond de carte, avec son voile de lisibilité ; le
+ * logo Google Maps, lui, a bien disparu — l'adresse seule ouvre déjà Maps au
+ * toucher, inutile de le répéter juste en dessous.
+ *
+ * Ce qui reste : un titre court (« Infos Pratiques », sans sous-titre) et
+ * trois lignes de contact essentielles (appeler, SMS, localisation),
+ * chacune avec l'icône au trait du projet plutôt qu'un vrai emoji Unicode —
+ * le tout centré **verticalement** dans la carte, pas seulement
+ * horizontalement.
  *
  * ⚠️ **« Émoji » demandés, icônes livrées — délibérément.** Un vrai emoji
  * (📞, 💬, 📍) est un glyphe **couleur**, dessiné différemment par la police
@@ -70,6 +73,20 @@ export default function InfosScreen() {
         fadeOnly
         style={[styles.card, shadows.card, hoursHeight != null && { height: hoursHeight }]}
       >
+        <Image
+          source={require('../../assets/images/ambiance-soiree.webp')}
+          style={StyleSheet.absoluteFill}
+          contentFit="cover"
+          // Déjà décrite sur l'accueil ; ici purement décorative, derrière du
+          // contenu qui porte lui-même son sens (titre et lignes de contact).
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
+        />
+        {/* Voile de lisibilité — même règle que le texte sur une photo à
+            l'accueil : jamais de texte clair sans un fond qu'on maîtrise
+            derrière lui. */}
+        <View style={[StyleSheet.absoluteFill, styles.veil]} pointerEvents="none" />
+
         <Text style={styles.cardTitle}>Infos Pratiques</Text>
 
         <View style={styles.contactList}>
@@ -93,36 +110,6 @@ export default function InfosScreen() {
             onPress={openMaps}
             accessibilityLabel="Ouvrir l’itinéraire dans Google Maps"
           />
-
-          {/*
-            Demande de Jonathan, 7 août 2026 : « bien indiquer ce qu'il se
-            passe » sous l'adresse — le vrai logo Google Maps (fourni par
-            Jonathan, converti en WebP — voir `assets/images/`) plutôt qu'une
-            simple icône de lieu, pour que l'action soit reconnaissable au
-            premier coup d'œil. Remplace le logo redessiné à la main
-            (`SocialIcon`, name `maps`, retiré du même coup) du premier essai
-            — celui-ci est le vrai logo, pas une reconstitution. Même geste
-            que la ligne du dessus (`openMaps`) : un second déclencheur, plus
-            explicite. Fond blanc opaque propre au fichier d'origine (un
-            `.jpg` fourni sans transparence, la conversion WebP ne lui en
-            invente pas) : une bordure fine (`mapsBadge`) l'entoure pour qu'il
-            ne se fonde pas dans le fond clair de la carte.
-          */}
-          <PressableScale
-            accessibilityRole="button"
-            accessibilityLabel="Ouvrir dans Google Maps"
-            accessibilityHint="Ouvre l’itinéraire dans Google Maps"
-            scaleTo={0.96}
-            onPress={openMaps}
-            style={styles.mapsBadge}
-          >
-            <Image
-              source={require('../../assets/images/googlemaps.webp')}
-              style={styles.mapsLogo}
-              contentFit="contain"
-              accessibilityLabel="Logo Google Maps"
-            />
-          </PressableScale>
         </View>
       </Reveal>
 
@@ -172,7 +159,7 @@ function ContactLine({ icon, label, onPress, accessibilityLabel, accessibilityHi
       onPress={onPress}
       style={styles.contactRow}
     >
-      <Icon name={icon} size={20} color={colors.primary} />
+      <Icon name={icon} size={20} color={colors.surfaceContainerLowest} />
       <Text style={styles.contactText}>{label}</Text>
     </PressableScale>
   );
@@ -195,16 +182,24 @@ const styles = StyleSheet.create({
     // dans les deux cas.
     minHeight: 240,
     borderRadius: radius.md,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.outlineVariant,
-    backgroundColor: colors.surfaceContainerLow,
+    overflow: 'hidden',
     justifyContent: 'center',
     alignItems: 'center',
     gap: spacing.sm,
+    backgroundColor: colors.surfaceContainerHigh,
+  },
+  veil: {
+    // `duskShade` (0,5) : assez pour tenir un texte clair sur les zones les
+    // plus lumineuses de la photo (guirlandes, tentes éclairées), pas assez
+    // pour l'éteindre — la même retenue que le voile de la vidéo d'accueil.
+    backgroundColor: colors.duskShade,
   },
   cardTitle: {
     ...type.headlineMd,
-    color: colors.onSurface,
+    color: colors.surfaceContainerLowest,
+    textShadowColor: 'rgba(12,23,32,0.45)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 6,
   },
   contactList: {
     alignItems: 'center',
@@ -221,21 +216,10 @@ const styles = StyleSheet.create({
   },
   contactText: {
     ...type.bodyLg,
-    color: colors.onSurface,
-  },
-  mapsBadge: {
-    marginTop: spacing.xs,
-    borderRadius: radius.sm,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.outlineVariant,
-    overflow: 'hidden',
-  },
-  mapsLogo: {
-    // Ratio du fichier source (300 × 150 = 2:1), conservé pour ne pas
-    // déformer le logo — `contentFit="contain"` rend ça sans effet ici,
-    // mais autant partir d'un cadre juste plutôt que d'un carré qui rogne.
-    width: 150,
-    height: 75,
+    color: colors.surfaceContainerLowest,
+    textShadowColor: 'rgba(12,23,32,0.45)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 6,
   },
 
   /* Horaires */

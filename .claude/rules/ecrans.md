@@ -311,9 +311,9 @@ Quatre choses à ne pas défaire :
   l'outline de la vue — avec `radius.pill`, un parent pleine largeur donne une
   pilule aussi large que l'écran, visible comme une bande grise.
 
-## Infos : une carte de contact, réduite à l'essentiel
+## Infos : une carte de contact sur fond photo, réduite à l'essentiel
 
-`app/(tabs)/infos.tsx` a changé **quatre fois** le 7 août 2026. Ce qui reste
+`app/(tabs)/infos.tsx` a changé **cinq fois** le 7 août 2026. Ce qui reste
 aujourd'hui, dans l'ordre des passes (utile pour ne pas revenir en arrière
 sans le savoir) :
 
@@ -324,16 +324,19 @@ sans le savoir) :
    par Jonathan.
 4. La photo d'ambiance de l'accueil (`ambiance-soiree.webp`) en fond de
    carte, plus de titre.
-5. **La version actuelle** : retour à une carte **simple**, au même langage
-   que la carte Horaires juste en dessous (fond clair `surfaceContainerLow`,
-   bordure fine) — la photo « ne donnait pas bien ». Un titre court (« Infos
-   Pratiques », sans sous-titre) et trois lignes de contact essentielles
-   (appeler, SMS, localisation), chacune avec une icône, le tout **centré
-   verticalement** dans la carte (`justifyContent: 'center'` sur `card`, pas
-   seulement `alignItems` horizontal). Chaque passe a retiré ce que la
-   précédente venait d'ajouter (`InfoCard`, `MapPreview.tsx`, le kicker de
-   marque, `venue.email`/`venue.website`, la photo et son voile) : ne pas les
-   réintroduire sans savoir qu'ils ont déjà été essayés et écartés.
+5. Retour à une carte **sans photo**, fond clair — malentendu : « enlève
+   l'image » visait en réalité le logo Google Maps (point 6), pas la photo.
+6. **La version actuelle** : la photo est revenue, le logo Google Maps a
+   disparu. Fond de carte `ambiance-soiree.webp` (la même qu'à l'accueil,
+   avec son voile de lisibilité), titre court (« Infos Pratiques », sans
+   sous-titre) et trois lignes de contact essentielles (appeler, SMS,
+   localisation), chacune avec une icône, le tout **centré verticalement**
+   dans la carte (`justifyContent: 'center'` sur `card`, pas seulement
+   `alignItems` horizontal). Chaque passe a retiré ce que la précédente
+   venait d'ajouter (`InfoCard`, `MapPreview.tsx`, le kicker de marque,
+   `venue.email`/`venue.website`, le logo Google Maps et
+   `assets/images/googlemaps.webp`) : ne pas les réintroduire sans savoir
+   qu'ils ont déjà été essayés et écartés.
 
 ⚠️ **« Émoji » demandé, icônes livrées — c'est délibéré, pas une
 approximation.** Un vrai emoji Unicode (📞, 💬, 📍) est un glyphe **couleur**,
@@ -343,10 +346,15 @@ diffère justement d'un OS à l'autre — l'inverse de ce qui était demandé
 (« compatible iPhone et Android »). `Icon.tsx` (`call`, `message`,
 `location`) est le jeu de pictogrammes du projet : un seul trait, une seule
 couleur, un rendu strictement identique quelle que soit la plateforme. C'est
-elle, pas un caractère emoji, qui tient la promesse demandée. Sur le fond
-clair de la version actuelle, ces icônes et le texte des lignes reprennent
-les couleurs standard du projet (`colors.primary`, `colors.onSurface`) — plus
-besoin de la teinte claire ni de l'ombre portée qu'exigeait la photo.
+elle, pas un caractère emoji, qui tient la promesse demandée.
+
+**Voile de lisibilité obligatoire sur la photo** (`styles.veil`,
+`colors.duskShade`, 0,5) — même règle que le texte sur la vidéo de l'accueil,
+plus bas dans ce fichier : jamais de texte clair posé directement sur une
+photo qu'on ne maîtrise pas. Le titre et les lignes de contact portent tous
+`colors.surfaceContainerLowest` (le même blanc cassé que partout ailleurs sur
+fond sombre) plus une ombre portée légère — sans elle le texte se délite sur
+les zones les plus claires de la photo (guirlandes, tentes éclairées).
 
 **`ContactLine` (local au fichier) est un `PressableScale`, pas un
 `Button`.** Une ligne de contact se lit comme du texte accompagné d'une
@@ -360,9 +368,16 @@ de La Carte (`DishCard`). Trois lignes seulement, toutes au même poids visuel
 | Envoyer un SMS | `message` | `sms:${venue.phoneDial}` — appli de messages, numéro déjà rempli |
 | Adresse (`venue.street`, `venue.city`) | `location` | `venue.mapsUrl` — Google Maps |
 
+⚠️ **Pas de logo Google Maps sous l'adresse.** Essayé le 7 août 2026 — d'abord
+redessiné à la main (`SocialIcon`, name `maps`, retiré de `SocialIcon.tsx`),
+puis remplacé par le vrai fichier fourni par Jonathan
+(`assets/images/googlemaps.webp`) — avant d'être retiré à son tour le même
+jour : l'adresse ouvre déjà Google Maps au toucher, un second déclencheur
+juste en dessous ne faisait que répéter la même action.
+
 **La réservation reste joignable depuis l'en-tête**, sur cet écran comme sur
 les trois autres : ce n'est plus le rôle de cette carte, qui ne parle que de
-contact direct. **Les horaires n'ont pas bougé** à travers ces cinq passes —
+contact direct. **Les horaires n'ont pas bougé** à travers ces six passes —
 carte séparée, toujours dépliée, juste en dessous.
 
 ⚠️ **La carte de contact reprend la hauteur MESURÉE de la carte Horaires**,
@@ -373,22 +388,6 @@ est connue (`minHeight: 240` sert de repli le temps du premier rendu). Une
 valeur en dur aurait fini par diverger au moindre changement de police, de
 `spacing` ou de contenu des horaires ; la mesure reste juste par
 construction.
-
-**Sous la ligne d'adresse, un second déclencheur : le vrai logo Google Maps**
-(`assets/images/googlemaps.webp`, fourni par Jonathan et affiché tel quel —
-pas une reconstitution). Même geste que la ligne du dessus (`openMaps`),
-juste plus explicite sur ce qui va s'ouvrir.
-
-⚠️ **Un premier essai l'avait redessiné à la main** (`SocialIcon`, name
-`maps`, même esprit que les logos Facebook/Instagram de « Retrouver
-l'artiste ») — retiré de `SocialIcon.tsx` dès que le vrai fichier est arrivé,
-le même jour. Redessiner un logo n'a de sens que tant qu'on n'a pas le vrai
-fichier ; une fois qu'on l'a, l'utiliser directement vaut toujours mieux
-qu'une approximation.
-- **Le fond blanc du badge est celui du fichier d'origine**, pas un ajout :
-  fourni en `.jpg` (sans transparence possible) puis converti en WebP, qui ne
-  lui en invente pas. Une bordure fine (`mapsBadge`) l'entoure pour qu'il ne
-  se fonde pas dans le fond clair de la carte.
 
 ## La feuille de réservation glisse depuis `onShow`, pas depuis un effet
 
