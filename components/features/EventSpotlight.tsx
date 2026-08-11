@@ -26,21 +26,42 @@ import {
   PosterTitle,
   tagLabelStyle,
 } from '@/components/features/SpotlightParts';
-import { colors } from '@/constants/theme';
+import { colors, tabularNums } from '@/constants/theme';
 import type { GuinguetteEvent } from '@/data/events';
 
 type EventSpotlightProps = {
   /** Titre de la section — « À l'affiche »… */
   kicker: string;
   event: GuinguetteEvent;
+  /**
+   * Repère de pagination (« 2 / 3 »), affiché à droite du kicker sur la même
+   * ligne — demande de Jonathan, 11 août 2026 : il vivait seul dans l'en-tête
+   * fixe de l'écran (`app/(tabs)/soirees.tsx`), sur sa propre ligne, ce qui
+   * poussait le journal — le contenu principal — plus bas qu'il ne le
+   * faudrait. Recevoir un texte déjà formaté plutôt que `index`/`total` :
+   * `EventSpotlight` ne sait rien de la pagination, il ne fait qu'afficher.
+   */
+  pageLabel?: string;
 };
 
-function EventSpotlightComponent({ kicker, event }: EventSpotlightProps) {
+function EventSpotlightComponent({ kicker, event, pageLabel }: EventSpotlightProps) {
   const reduceMotion = useReducedMotion();
 
   return (
     <YStack gap="$sm">
-      <Kicker>{kicker}</Kicker>
+      <XStack alignItems="center" gap="$sm">
+        {/* `flex={1}` + `numberOfLines={1}` : même parade que le titre d'une
+            liste de La Carte dans sa rangée — sans eux, un kicker long
+            pousserait le repère de pagination hors du cadre au lieu de se
+            tronquer proprement devant lui. */}
+        <Kicker flex={1} numberOfLines={1}>
+          {kicker}
+        </Kicker>
+        {/* `tabularNums` : il se réécrit à chaque tour de page, une chasse
+            fixe lui évite de tressauter en largeur — ne marche que sur
+            Karla, la police du kicker. */}
+        {pageLabel !== undefined && <Kicker style={tabularNums}>{pageLabel}</Kicker>}
+      </XStack>
 
       <PosterShell>
         <PosterContent>
