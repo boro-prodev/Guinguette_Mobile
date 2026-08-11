@@ -16,7 +16,9 @@ import {
   type PropsWithChildren,
 } from 'react';
 import {
-  KeyboardAvoidingView,
+  Keyboard,
+  type KeyboardEvent,
+  type LayoutChangeEvent,
   Modal,
   Platform,
   ScrollView,
@@ -104,6 +106,56 @@ export function ReserveProvider({ children }: PropsWithChildren) {
   const slideStarted = useRef(false);
   const showFallback = useRef<ReturnType<typeof setTimeout>>(undefined);
 
+  /**
+   * Remontée du panneau quand le clavier apparaît — mais seulement du
+   * *débordement* au-delà d'une « zone sacrifiée » (résumé + pied de page),
+   * mesurée en direct via `onLayout`. Tant que le clavier tient dans cette
+   * zone, `keyboardShift` reste à 0 : rien ne bouge, le clavier se pose
+   * simplement par-dessus elle. Un `KeyboardAvoidingView` classique n'a pas
+   * cette notion — il pousse toujours de la hauteur pleine du clavier, ce
+   * qui déplaçait tout le panneau (« casse le design », retour de Jonathan).
+   */
+  const keyboardShift = useSharedValue(0);
+  const footerHeight = useRef(0);
+  const summaryHeight = useRef(0);
+  const sacrificeHeight = useRef(0);
+
+  const measureFooter = useCallback((event: LayoutChangeEvent) => {
+    footerHeight.current = event.nativeEvent.layout.height;
+    sacrificeHeight.current = footerHeight.current + summaryHeight.current;
+  }, []);
+
+  const measureSummary = useCallback((event: LayoutChangeEvent) => {
+    summaryHeight.current = event.nativeEvent.layout.height;
+    sacrificeHeight.current = footerHeight.current + summaryHeight.current;
+  }, []);
+
+  useEffect(() => {
+    // `Will*` est plus doux sur iOS (anticipe l'animation native du clavier) ;
+    // `Did*` est la seule paire fiable sur Android.
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+
+    const onShow = (event: KeyboardEvent) => {
+      const overshoot = Math.max(0, event.endCoordinates.height - sacrificeHeight.current);
+      keyboardShift.value = withTiming(overshoot, {
+        duration: event.duration || TIMING.duration,
+        easing: TIMING.easing,
+        reduceMotion: ReduceMotion.System,
+      });
+    };
+    const onHide = () => {
+      keyboardShift.value = withTiming(0, { ...TIMING, reduceMotion: ReduceMotion.System });
+    };
+
+    const showSub = Keyboard.addListener(showEvent, onShow);
+    const hideSub = Keyboard.addListener(hideEvent, onHide);
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, [keyboardShift]);
+
   const reset = useCallback(() => {
     setStep(1);
     setDayId(null);
@@ -125,9 +177,10 @@ export function ReserveProvider({ children }: PropsWithChildren) {
   const open = useCallback(() => {
     reset();
     translateY.value = height;
+    keyboardShift.value = 0;
     slideStarted.current = false;
     setMounted(true);
-  }, [height, reset, translateY]);
+  }, [height, keyboardShift, reset, translateY]);
 
   /**
    * Fait monter la feuille. Appelée par `<Modal onShow>` — c'est-à-dire quand
@@ -230,7 +283,7 @@ export function ReserveProvider({ children }: PropsWithChildren) {
   );
 
   const panelStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: translateY.value }],
+    transform: [{ translateY: translateY.value - keyboardShift.value }],
   }));
 
   const backdropStyle = useAnimatedStyle(() => ({
@@ -272,11 +325,12 @@ export function ReserveProvider({ children }: PropsWithChildren) {
             />
           </Animated.View>
 
-          <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-            style={styles.sheetWrapper}
-            pointerEvents="box-none"
-          >
+          {/*
+            Pas de <KeyboardAvoidingView> ici : la remontée est pilotée par
+            `keyboardShift` (voir plus haut), combiné à `translateY` dans
+            `panelStyle`. Un simple <View> suffit comme conteneur.
+          */}
+          <View style={styles.sheetWrapper} pointerEvents="box-none">
             <Animated.View
               accessibilityViewIsModal
               style={[
@@ -415,7 +469,9 @@ export function ReserveProvider({ children }: PropsWithChildren) {
                       autoComplete="tel"
                       textContentType="telephoneNumber"
                     />
-                    <Text style={styles.summary}>{summary}</Text>
+                    <Text style={styles.summary} onLayout={measureSummary}>
+                      {summary}
+                    </Text>
                   </>
                 )}
 
@@ -449,7 +505,7 @@ export function ReserveProvider({ children }: PropsWithChildren) {
                 )}
               </ScrollView>
 
-              <View style={styles.footer}>
+              <View style={styles.footer} onLayout={measureFooter}>
                 <View style={styles.footerButtons}>
                   {step === 2 && (
                     <Button
@@ -482,7 +538,7 @@ export function ReserveProvider({ children }: PropsWithChildren) {
                 </Text>
               </View>
             </Animated.View>
-          </KeyboardAvoidingView>
+          </View>
         </GestureHandlerRootView>
       </Modal>
     </ReserveContext.Provider>
