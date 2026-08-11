@@ -152,6 +152,12 @@ forcer.**
 
 - `boro-prodev/Guinguette_Mobile` sur GitHub, **privé**, branche `main`, depuis
   le 3 août 2026.
+- **Un hook pre-commit bloque toute couleur en dur ajoutée** hors de
+  `constants/theme.ts`/`components/ui/SocialIcon.tsx` (`.githooks/pre-commit`,
+  ne vérifie que les lignes ajoutées — le code déjà présent n'est pas repassé
+  au crible). Le dossier `.githooks/` est versionné, mais son activation
+  (`git config core.hooksPath .githooks`) ne l'est pas : à relancer une fois
+  après un nouveau clone.
 - Le projet vit sous `C:\Users\jonat\source\repos\Guinguette_Mobile` — **pas**
   sous OneDrive (une ancienne version de la doc l'indiquait à tort).
 - **Les skills sont versionnés**, en vrais dossiers dans `.agents/skills/` et

@@ -97,8 +97,13 @@ function buildEvents(today: Date): GuinguetteEvent[] {
       ],
       price: 'Entrée libre',
       hype: 0.58,
-      image: require('../assets/images/programmation_01.webp'),
-      alt: 'Concert live à la guinguette',
+      // Ordre des images inversé entre la 1ʳᵉ et la 3ᵉ soirée (demande de
+      // Jonathan, 7 août 2026) : seuls `image`/`alt` bougent, jamais `id` ni
+      // le reste — la fiche du bas (`EventDetailPane`/`ArtistDetailPane`,
+      // reliée par `eventId`) doit continuer à parler de LA MÊME soirée que
+      // celle décrite juste au-dessus, seule l'affiche change de place.
+      image: require('../assets/images/programmation_02.webp'),
+      alt: 'Soirée guinguette et tapas en terrasse',
     },
     {
       id: 'bal-populaire-ete',
@@ -140,8 +145,10 @@ function buildEvents(today: Date): GuinguetteEvent[] {
       ],
       price: '22 € la formule dégustation',
       hype: 0.32,
-      image: require('../assets/images/programmation_02.webp'),
-      alt: 'Soirée guinguette et tapas en terrasse',
+      // Symétrique de l'échange plus haut (1 <-> 3) : cette soirée récupère
+      // l'affiche qui était sur la première.
+      image: require('../assets/images/programmation_01.webp'),
+      alt: 'Concert live à la guinguette',
     },
   ];
 

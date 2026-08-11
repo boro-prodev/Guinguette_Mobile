@@ -1,0 +1,51 @@
+#!/bin/sh
+# Pre-commit : bloque toute couleur ecrite en dur (hex ou rgba/rgb) AJOUTEE
+# par ce commit dans du code TypeScript, en dehors des exceptions listees
+# ci-dessous.
+#
+# Ne verifie que les lignes ajoutees (diff en +), pas le fichier entier : le
+# code deja present n'est pas repasse au crible retroactivement, seul du
+# NOUVEAU code en dur est bloque. Voir .claude/rules/design-system.md
+# « Ou vivent les valeurs » — toute couleur doit venir de constants/theme.ts.
+
+ALLOWED="constants/theme.ts components/ui/SocialIcon.tsx"
+
+is_allowed() {
+  for f in $ALLOWED; do
+    [ "$1" = "$f" ] && return 0
+  done
+  return 1
+}
+
+FAILED=0
+FILES=$(git diff --cached --name-only --diff-filter=ACM -- '*.ts' '*.tsx')
+
+for file in $FILES; do
+  is_allowed "$file" && continue
+
+  MATCHES=$(git diff --cached -U0 -- "$file" \
+    | grep -E '^\+[^+]' \
+    | grep -E '#[0-9a-fA-F]{3,8}\b|rgba?\([0-9]')
+
+  if [ -n "$MATCHES" ]; then
+    if [ "$FAILED" -eq 0 ]; then
+      echo ""
+      echo "Commit bloque : couleur ecrite en dur ajoutee hors de constants/theme.ts"
+      echo ""
+    fi
+    echo "  $file"
+    echo "$MATCHES" | sed 's/^/    /'
+    FAILED=1
+  fi
+done
+
+if [ "$FAILED" -eq 1 ]; then
+  echo ""
+  echo "-> Passer par constants/theme.ts (ajouter une teinte nommee si besoin),"
+  echo "   ou ajouter le fichier a la liste ALLOWED de ce script si c'est une"
+  echo "   exception legitime (cf. .claude/rules/design-system.md)."
+  echo ""
+  exit 1
+fi
+
+exit 0

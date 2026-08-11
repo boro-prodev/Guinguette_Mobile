@@ -2,7 +2,8 @@
 
 > **Ce document ne parle que du futur.** Ce que l'app *fait* aujourd'hui est
 > décrit dans `CLAUDE.md` ; *pourquoi* elle le fait ainsi, et les pièges
-> rencontrés en chemin, dans `.claude/rules/`.
+> rencontrés en chemin, dans `.claude/rules/` ; l'index chronologique des
+> décisions déjà tranchées, dans `DECISIONS.md`.
 >
 > **Remis à plat le 6 août 2026.** Il avait grossi jusqu'à 1000 lignes en
 > accumulant, en tête de fichier, le récit chronologique de chaque chantier
@@ -179,7 +180,7 @@ un lien.
 | **Q3** | **Voile global à 0,32, ou écran local derrière le seul bloc de texte ?** Le second garde la vidéo vive en haut et en bas. | Chantier 1d | Oui — se juge à l'écran |
 | **Q4** | **Liens des artistes : vraies URL ou placeholders ?** | — | Oui — pastilles désactivées en attendant |
 | **Q6** | **Le pli du feuilletage est-il juste ?** Tout est dans l'objet `TURN` de `NewspaperPager.tsx`, une valeur nommée par réglage : `angleSign` (⚠️ **le sens de la rotation n'a jamais été vu à l'œil** — si le pli part du mauvais bord, c'est ce seul signe à inverser), `maxAngle` (18°), `threshold` (30 % de la largeur), `perspective` (1000), `foldOpacity`, `foldSpread`, `lift`, `edgeOpacity`, `edgeFadeIn`. Aucun n'est une valeur de design system : ce sont des réglages de ressenti, et ils se jugent à l'écran. | — | Oui — se juge à l'œil, une valeur à la fois |
-| **Q5** | **Coupe-t-on les décorations hors focus ?** Rien ne fuit (tous les timers sont nettoyés), mais un onglet visité n'est jamais démonté : l'anneau `emphasis`, les ampoules de la guirlande et le battement du `Countdown` tournent **même quand on est sur un autre onglet**. Les figer (`useIsFocused`) ne changerait rien à l'image. Demandé puis suspendu par Jonathan le 5 août, faute d'avoir tranché entre « c'est plus fluide ? » et « c'est plus beau ? ». ⚠️ Le périmètre s'élargit le 6 août : `lazy: false` (`app/(tabs)/_layout.tsx`) monte désormais les quatre onglets dès le démarrage, donc le `Countdown` de Soirées bat **dès le lancement de l'app**, plus seulement après une première visite. | — | Oui — dépend de Q2 |
+| **Q5** | **Coupe-t-on les décorations hors focus ?** Rien ne fuit (tous les timers sont nettoyés), mais un onglet visité n'est jamais démonté : l'anneau `emphasis` et les ampoules de la guirlande tournent **même quand on est sur un autre onglet**. Les figer (`useIsFocused`) ne changerait rien à l'image. Demandé puis suspendu par Jonathan le 5 août, faute d'avoir tranché entre « c'est plus fluide ? » et « c'est plus beau ? ». ⚠️ Le périmètre s'élargit le 6 août : `lazy: false` (`app/(tabs)/_layout.tsx`) monte désormais les quatre onglets dès le démarrage — ce qui vaut pour tout ce qui reste monté en continu, pas seulement après une première visite. Le `Countdown` de Soirées, qui aggravait ce point, a disparu le 7 août 2026 (supprimé, pas seulement figé) : le périmètre restant est plus court qu'il ne l'était. | — | Oui — dépend de Q2 |
 
 ---
 

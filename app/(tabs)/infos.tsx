@@ -1,22 +1,65 @@
 /**
- * Infos Pratiques — adresse, contact et horaires.
- * Contenu court et statique : une ScrollView suffit, pas de liste virtualisée.
+ * Infos Pratiques — une carte de contact sur fond photo, puis les horaires.
+ *
+ * ⚠️ **La photo a été retirée puis remise le 7 août 2026, dans la même
+ * session** — un malentendu, pas un aller-retour de goût : « enlève l'image »
+ * visait le logo Google Maps redessiné sous l'adresse (qui donnait mal), pas
+ * la photo de fond. La photo (`ambiance-soiree.webp`, la même qu'à
+ * l'accueil) reste donc en fond de carte, avec son voile de lisibilité ; le
+ * logo Google Maps, lui, a bien disparu — l'adresse seule ouvre déjà Maps au
+ * toucher, inutile de le répéter juste en dessous.
+ *
+ * Ce qui reste : un titre court (« Infos Pratiques », sans sous-titre) et
+ * trois lignes de contact essentielles (appeler, SMS, localisation),
+ * chacune avec l'icône au trait du projet plutôt qu'un vrai emoji Unicode —
+ * le tout centré **verticalement** dans la carte, pas seulement
+ * horizontalement.
+ *
+ * ⚠️ **« Émoji » demandés, icônes livrées — délibérément.** Un vrai emoji
+ * (📞, 💬, 📍) est un glyphe **couleur**, dessiné différemment par la police
+ * emoji de chaque OS (Apple Color Emoji ≠ Noto Color Emoji) : il ne peut pas
+ * être rendu « noir et blanc » de façon fiable, et ne rendra jamais
+ * identique sur iPhone et Android — l'inverse de ce qui était demandé.
+ * `Icon.tsx` (`call`, `message`, `location`) est le jeu de pictogrammes du
+ * projet, un seul trait, une seule couleur, un seul rendu quelle que soit la
+ * plateforme : c'est la version qui tient vraiment la promesse « compatible
+ * iPhone et Android, en noir et blanc ».
  */
 import { Image } from 'expo-image';
-import { LinearGradient } from 'expo-linear-gradient';
-import { useCallback } from 'react';
-import { Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useCallback, useState } from 'react';
+import { Linking, ScrollView, StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native';
 
-import { Button } from '@/components/ui/Button';
-import { Icon } from '@/components/ui/Icon';
+import { Icon, type IconName } from '@/components/ui/Icon';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { Reveal } from '@/components/ui/Reveal';
 import { colors, radius, shadows, spacing, tabularNums, type } from '@/constants/theme';
 import { openingHours, venue } from '@/data/venue';
-import { useReserve } from '@/features/reserve/ReserveProvider';
 
 export default function InfosScreen() {
-  const { open } = useReserve();
+  /**
+   * Demande de Jonathan, 7 août 2026 : la carte de contact (photo) doit faire
+   * la même hauteur que la carte Horaires juste en dessous. La hauteur des
+   * Horaires dépend du rendu réel des polices (rien de fixe à recopier), donc
+   * on la MESURE (`onLayout`, ajouté à `Reveal`) plutôt que de deviner un
+   * nombre — exact quel que soit l'appareil, contrairement à une valeur en
+   * dur qui aurait fini par diverger.
+   */
+  const [hoursHeight, setHoursHeight] = useState<number>();
+  const onHoursLayout = useCallback((event: LayoutChangeEvent) => {
+    setHoursHeight(event.nativeEvent.layout.height);
+  }, []);
+
+  const callPhone = useCallback(() => {
+    Linking.openURL(`tel:${venue.phoneDial}`).catch(() => {
+      // Aucune app de téléphonie disponible : on ne casse pas la démo pour autant.
+    });
+  }, []);
+
+  const smsPhone = useCallback(() => {
+    Linking.openURL(`sms:${venue.phoneDial}`).catch(() => {
+      // Même filet que `callPhone` — un appareil sans app SMS reste possible.
+    });
+  }, []);
 
   const openMaps = useCallback(() => {
     Linking.openURL(venue.mapsUrl).catch(() => {
@@ -26,84 +69,52 @@ export default function InfosScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-      <Reveal fadeOnly style={styles.hero}>
+      <Reveal
+        fadeOnly
+        style={[styles.card, shadows.card, hoursHeight != null && { height: hoursHeight }]}
+      >
         <Image
-          source={require('../../assets/images/presentation-global.webp')}
-          style={styles.heroImage}
-          contentFit="cover"
-          priority="high"
-          accessibilityLabel="Vue d’ensemble de la guinguette au bord de l’eau"
-        />
-        <LinearGradient
-          pointerEvents="none"
-          colors={['rgba(12,23,32,0.55)', 'rgba(240,173,74,0.12)']}
-          start={{ x: 0, y: 1 }}
-          end={{ x: 0, y: 0 }}
+          source={require('../../assets/images/ambiance-soiree.webp')}
           style={StyleSheet.absoluteFill}
-        />
-        <View style={styles.heroText}>
-          <View style={styles.heroBadge}>
-            <Text style={styles.heroBadgeLabel}>Découvrir</Text>
-          </View>
-          <Text style={styles.heroTitle}>Infos Pratiques</Text>
-        </View>
-      </Reveal>
-
-      {/* Nous trouver */}
-      <Reveal delay={100} style={[styles.card, shadows.card]}>
-        <View style={styles.cardHeader}>
-          <Icon name="location" size={24} color={colors.primary} />
-          <View style={styles.cardHeaderText}>
-            <Text style={styles.cardTitle}>Nous Trouver</Text>
-            <Text style={styles.address}>{venue.street}</Text>
-            <Text style={styles.city}>{venue.city}</Text>
-          </View>
-        </View>
-
-        <Image
-          source={require('../../assets/images/presentation-centre.webp')}
-          style={styles.map}
           contentFit="cover"
-          accessibilityLabel="Vue du site de la guinguette"
-          cachePolicy="memory-disk"
+          // Déjà décrite sur l'accueil ; ici purement décorative, derrière du
+          // contenu qui porte lui-même son sens (titre et lignes de contact).
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
         />
+        {/* Voile de lisibilité — même règle que le texte sur une photo à
+            l'accueil : jamais de texte clair sans un fond qu'on maîtrise
+            derrière lui. */}
+        <View style={[StyleSheet.absoluteFill, styles.veil]} pointerEvents="none" />
 
-        <Button
-          full
-          accessibilityLabel='Ouvrir l’itinéraire dans Google Maps'
-          onPress={openMaps}
-        >
-          <Button.Icon name="directions" />
-          <Button.Text>M’y rendre</Button.Text>
-        </Button>
+        <Text style={styles.cardTitle}>Infos Pratiques</Text>
+
+        <View style={styles.contactList}>
+          <ContactLine
+            icon="call"
+            label={venue.phone}
+            onPress={callPhone}
+            accessibilityLabel={`Appeler ${venue.phone}`}
+            accessibilityHint="Ouvre le clavier d’appel, numéro déjà composé"
+          />
+          <ContactLine
+            icon="message"
+            label="Envoyer un SMS"
+            onPress={smsPhone}
+            accessibilityLabel="Envoyer un SMS"
+            accessibilityHint="Ouvre l’application de messages, numéro déjà rempli"
+          />
+          <ContactLine
+            icon="location"
+            label={`${venue.street}, ${venue.city}`}
+            onPress={openMaps}
+            accessibilityLabel="Ouvrir l’itinéraire dans Google Maps"
+          />
+        </View>
       </Reveal>
 
-      {/* Contact */}
-      <Reveal delay={200} style={[styles.card, shadows.card]}>
-        <View style={styles.cardHeader}>
-          <Icon name="call" size={24} color={colors.secondary} />
-          <Text style={styles.cardTitle}>Contact</Text>
-        </View>
-
-        <PressableScale
-          accessibilityRole="button"
-          accessibilityLabel={`Réserver une table — ${venue.phone}`}
-          scaleTo={0.97}
-          onPress={open}
-          style={styles.phoneBlock}
-        >
-          <Text style={styles.phoneLead}>Réservez votre table</Text>
-          <Text style={styles.phone}>{venue.phone}</Text>
-        </PressableScale>
-      </Reveal>
-
-      {/* Horaires */}
-      <Reveal delay={300} style={[styles.card, shadows.card]}>
-        <View style={styles.cardHeader}>
-          <Icon name="clock" size={24} color={colors.tertiary} />
-          <Text style={styles.cardTitle}>Horaires</Text>
-        </View>
-
+      <Reveal delay={150} onLayout={onHoursLayout} style={[styles.hoursCard, shadows.card]}>
+        <Text style={styles.hoursTitle}>Horaires</Text>
         <View>
           {openingHours.map((row, index) => (
             <View
@@ -126,6 +137,34 @@ export default function InfosScreen() {
   );
 }
 
+type ContactLineProps = {
+  icon: IconName;
+  label: string;
+  onPress: () => void;
+  accessibilityLabel: string;
+  accessibilityHint?: string;
+};
+
+/** Une ligne de contact tappable — pas un `Button` : ça se lit comme du texte,
+ *  pas comme une action étiquetée (voir `.claude/rules/design-system.md`,
+ *  « trois primitives tactiles »). `PressableScale` est la zone tactile brute
+ *  du projet, exactement ce rôle-là. */
+function ContactLine({ icon, label, onPress, accessibilityLabel, accessibilityHint }: ContactLineProps) {
+  return (
+    <PressableScale
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
+      accessibilityHint={accessibilityHint}
+      scaleTo={0.97}
+      onPress={onPress}
+      style={styles.contactRow}
+    >
+      <Icon name={icon} size={20} color={colors.surfaceContainerLowest} />
+      <Text style={styles.contactText}>{label}</Text>
+    </PressableScale>
+  );
+}
+
 const styles = StyleSheet.create({
   content: {
     paddingHorizontal: spacing.gutter,
@@ -134,102 +173,68 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
 
-  /* Hero */
-  hero: {
-    height: 220,
+  /* Carte de contact */
+  card: {
+    // Le contenu (titre + lignes) est centré au flex, pas par un padding
+    // fixe : `justifyContent`/`alignItems` marchent aussi bien avant que
+    // `hoursHeight` soit connu (replis sur `minHeight`) qu'une fois la
+    // hauteur mesurée appliquée — un padding fixe aurait dû être recalculé
+    // dans les deux cas.
+    minHeight: 240,
     borderRadius: radius.md,
     overflow: 'hidden',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: spacing.sm,
     backgroundColor: colors.surfaceContainerHigh,
   },
-  heroImage: {
-    ...StyleSheet.absoluteFill,
+  veil: {
+    // `duskShade` (0,5) : assez pour tenir un texte clair sur les zones les
+    // plus lumineuses de la photo (guirlandes, tentes éclairées), pas assez
+    // pour l'éteindre — la même retenue que le voile de la vidéo d'accueil.
+    backgroundColor: colors.duskShade,
   },
-  heroText: {
-    position: 'absolute',
-    left: spacing.md,
-    right: spacing.md,
-    bottom: spacing.md,
-  },
-  heroBadge: {
-    alignSelf: 'flex-start',
-    backgroundColor: colors.tertiaryContainer,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs + 2,
-    borderRadius: radius.pill,
-    marginBottom: spacing.sm,
-  },
-  heroBadgeLabel: {
-    // « Découvrir » est en casse normale : `caption`, pas le chasse de `labelSm`.
-    ...type.caption,
-    color: colors.onTertiaryContainer,
-  },
-  heroTitle: {
-    // `headlineLg` plutôt qu'un 34/40 inventé sur place : le cran existait
-    // déjà dans l'échelle, et 34 px réclamait un interligne de 41,9 px —
-    // « Infos Pratiques » y perdait le jambage de son « p » et de son « q ».
-    ...type.headlineLg,
+  cardTitle: {
+    ...type.headlineMd,
     color: colors.surfaceContainerLowest,
-    textShadowColor: 'rgba(12,23,32,0.45)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 10,
+    textShadowColor: colors.duskHaze,
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 6,
+  },
+  contactList: {
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  contactRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    // Zone tactile ≥ 44 px même pour une ligne icône + texte sans fond.
+    minHeight: 44,
+  },
+  contactText: {
+    ...type.bodyLg,
+    color: colors.surfaceContainerLowest,
+    textShadowColor: colors.duskHaze,
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 6,
   },
 
-  /* Cartes */
-  card: {
+  /* Horaires */
+  hoursCard: {
     backgroundColor: colors.surfaceContainerLow,
     borderRadius: radius.md,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.outlineVariant,
     padding: spacing.md,
-    gap: spacing.md,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
     gap: spacing.sm,
   },
-  cardHeaderText: {
-    flex: 1,
-  },
-  cardTitle: {
+  hoursTitle: {
     ...type.headlineMd,
     color: colors.onSurface,
   },
-  address: {
-    ...type.bodyLg,
-    color: colors.onSurfaceVariant,
-  },
-  city: {
-    ...type.bodyLg,
-    // Les capitales de la localité sont une présentation, pas du contenu :
-    // `venue.city` est stocké en casse normale et mis en forme ici.
-    textTransform: 'uppercase',
-    color: colors.onSurfaceVariant,
-  },
-  map: {
-    width: '100%',
-    height: 176,
-    borderRadius: radius.sm,
-    backgroundColor: colors.surfaceContainerHigh,
-  },
-  /* Contact */
-  phoneBlock: {
-    backgroundColor: colors.surfaceContainer,
-    borderRadius: radius.sm,
-    padding: spacing.md,
-    alignItems: 'center',
-  },
-  phoneLead: {
-    ...type.bodyMd,
-    color: colors.onSurfaceVariant,
-    marginBottom: spacing.xs,
-  },
-  phone: {
-    ...type.headlineLg,
-    color: colors.primary,
-  },
-
-  /* Horaires */
   hourRow: {
     flexDirection: 'row',
     alignItems: 'center',

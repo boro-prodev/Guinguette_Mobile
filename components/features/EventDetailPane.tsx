@@ -20,7 +20,7 @@
  * vue, donc elle « saute » au lieu de suivre le fondu. Seul le contenu
  * (`EventDetailContent`, ci-dessous) se remonte, `Pane` reste stable.
  */
-import { memo, useCallback } from 'react';
+import { memo, useCallback, useState } from 'react';
 import { StyleSheet } from 'react-native';
 import Animated, { FadeIn, ReduceMotion, useReducedMotion } from 'react-native-reanimated';
 import { styled, Text, Theme, XStack, YStack } from 'tamagui';
@@ -32,7 +32,6 @@ import { Button } from '@/components/ui/Button';
 import { Icon } from '@/components/ui/Icon';
 import { colors, shadows, tabularNums, type } from '@/constants/theme';
 import type { GuinguetteEvent } from '@/data/events';
-import { useDemoFlag } from '@/hooks/useDemoFlag';
 
 const StepTime = styled(Text, {
   name: 'EventStepTime',
@@ -73,16 +72,27 @@ const PriceTag = styled(Text, {
 type EventDetailPaneProps = { event: GuinguetteEvent };
 
 function EventDetailContent({ event }: EventDetailPaneProps) {
-  const { enabled, toggle } = useDemoFlag(`rsvp:${event.id}`);
+  /**
+   * ⚠️ **Volontairement PAS `useDemoFlag`** (`demo:*`, AsyncStorage) — demande
+   * de Jonathan, 7 août 2026 : « J'y serai » ne doit jamais apparaître déjà
+   * coché au départ. Persisté, il aurait fini par rouvrir sur un état coché
+   * dès qu'on l'aurait touché une fois en testant — exactement le défaut
+   * remonté. Un `useState` local repart donc à `false` à chaque montage
+   * (chaque relance de l'app), tout en gardant le comportement pendant la
+   * démo elle-même : le bouton bascule, le toast s'affiche, la jauge
+   * d'ambiance bondit, tant que l'écran reste ouvert.
+   */
+  const [enabled, setEnabled] = useState(false);
   const { showToast } = useToast();
   const reduceMotion = useReducedMotion();
 
   const handleRsvp = useCallback(() => {
-    const going = toggle();
+    const going = !enabled;
+    setEnabled(going);
     showToast(
       going ? 'C’est noté, on vous garde une place ! (démo)' : 'Participation annulée (démo)'
     );
-  }, [showToast, toggle]);
+  }, [enabled, showToast]);
 
   return (
     // Le thème de la soirée peint tout le panneau — et bascule au vert dès

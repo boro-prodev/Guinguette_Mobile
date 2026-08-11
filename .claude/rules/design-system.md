@@ -22,6 +22,46 @@ paths:
   partout, StyleSheet comme Tamagui. Ne jamais recopier une valeur dans la
   config.
 - Pas de dark mode : `userInterfaceStyle` est figé sur `light` dans `app.json`.
+- ⚠️ **Le fond de la vue racine (`expo-system-ui`) est l'une des deux
+  exceptions admises à « jamais de valeur en dur »** (l'autre est
+  `SocialIcon.tsx`, plus bas). Zone précise : la barre de
+  navigation **système** d'Android elle-même (les boutons/gestes du
+  téléphone — recents, home, retour), **pas** la barre d'onglets de l'app
+  (celle-là reste peinte par `colors.surface`, `app/(tabs)/_layout.tsx`).
+  Deux réglages, pas plus :
+  - **`app.json` → `backgroundColor`** (`"#0c1720"`, recopie de
+    `colors.duskDeep` — fichier JSON strict, pas d'`import`, à resynchroniser à
+    la main si `duskDeep` change) : ne sert qu'aux futurs binaires natifs
+    (`prebuild`/EAS Build), lu par le plugin de config d'`expo-system-ui` à la
+    génération. **Sans effet sous Expo Go.**
+  - **`SystemUI.setBackgroundColorAsync(colors.duskDeep)`** dans
+    `app/_layout.tsx`, hors du cycle React (appelé au chargement du module, à
+    côté de `SplashScreen.preventAutoHideAsync()`, pas dans un `useEffect`) :
+    pose le fond de la **vue racine** Android — c'est lui qui compte sous
+    Expo Go, seul terrain de cette démo.
+  - ⚠️ **Ne pas élargir à `contentStyle` sur le `Stack` racine.** Essayé le
+    7 août 2026 pour couvrir un doute sur la couverture exacte de la vue
+    racine, puis retiré le jour même : `contentStyle` peint tout l'écran du
+    `Stack`, bien au-delà de la seule zone derrière la barre système, et
+    débordait sur des zones qui ne devaient pas foncer. `SystemUI` seul
+    suffit et reste **précisément scopé** à la zone visée.
+  - Les deux valeurs (`app.json` et l'appel `SystemUI`) doivent rester
+    identiques entre elles.
+  - `duskDeep` plutôt que `colors.surface` (le fond clair habituel de l'app) :
+    demande de Jonathan, qui voulait cette zone **sombre**, au ton du fond
+    assombri de la feuille de réservation plutôt qu'accordée au fond crème du
+    reste de l'app.
+- ⚠️ **`components/ui/SocialIcon.tsx` est la seconde exception.** Facebook et
+  Instagram ont une identité de couleur fixe, propre à la marque (bleu
+  `#1877F2`, dégradé jaune-rose-violet) : leur donner la teinte du thème
+  ambiant, comme le reste du jeu d'icônes (`Icon.tsx`, à trait unique), les
+  rendrait méconnaissables. Elles sont donc dessinées à part, avec leurs
+  vraies couleurs — c'est le **seul** endroit de l'app où une icône ne prend
+  pas sa couleur du thème courant. Le globe du site web, dans le même fichier,
+  n'est **pas** concerné : il reste sur le principe habituel (trait fin,
+  couleur reçue en prop). Cette exception est exclue par nom dans le hook
+  `pre-commit` (`.githooks/pre-commit`) qui bloque toute autre couleur en dur
+  ajoutée au code.
 
 ## Les accents passent par des thèmes, pas par des props
 
@@ -54,10 +94,10 @@ automatiquement enveloppée dans `<Button.Text>`.
 voile teinté par `$solid` du thème courant, pensé pour se poser sur une photo
 comme `lampion` avant lui (texte toujours clair, via `$surface` et non
 `$onOutline` — ce dernier vire sombre sur `dusk`/`neutral`, illisible une fois
-flouté). `emphasis` y ajoute un anneau ambré permanent qui bat (même
-mécanique que le point du `Countdown`) : de quoi garder un rang principal
-quand deux boutons `glass` partagent sinon le même traitement, sans revenir à
-un aplat de couleur.
+flouté). `emphasis` y ajoute un anneau ambré permanent qui bat (un
+`withRepeat`/`withTiming` en miroir sur l'opacité) : de quoi garder un rang
+principal quand deux boutons `glass` partagent sinon le même traitement, sans
+revenir à un aplat de couleur.
 
 ⚠️ **Sur Android, `tone="glass"` ne floute QUE si l'appelant passe
 `blurTarget`.** Depuis expo-blur 57, `dimezisBlurView` ne floute pas « ce qu'il

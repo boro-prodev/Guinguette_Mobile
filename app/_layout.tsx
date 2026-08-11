@@ -13,6 +13,7 @@ import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
+import * as SystemUI from 'expo-system-ui';
 import { useEffect } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -26,6 +27,21 @@ import { config } from '@/tamagui.config';
 SplashScreen.preventAutoHideAsync().catch(() => {
   // Le splash a déjà pu être masqué (rechargement à chaud) : sans conséquence.
 });
+
+// Fond de la vue racine Android (et iOS) — hors du cycle React, comme la doc
+// `expo-system-ui` le demande. `backgroundColor` dans `app.json` ne suffit
+// PAS : sur Android, cette clé n'est lue qu'à la génération d'un binaire natif
+// (`prebuild`), donc jamais sous Expo Go.
+//
+// ⚠️ Ne PAS élargir ce réglage à `contentStyle` sur le `Stack` (essayé puis
+// annulé le 7 août 2026) : ce n'est pas la même zone. Ce que ce fond peint
+// n'apparaît QUE derrière la barre de navigation système d'Android elle-même
+// (les trois boutons/gestes du téléphone — pas la barre d'onglets de l'app,
+// qui reste peinte par `colors.surface` dans `app/(tabs)/_layout.tsx`) :
+// c'est cette zone précise, et uniquement elle, que Jonathan voulait sombre.
+// `contentStyle` peint tout l'écran du `Stack` par-dessus cette vue racine et
+// débordait largement de cette zone — retiré.
+SystemUI.setBackgroundColorAsync(colors.duskDeep).catch(() => {});
 
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({

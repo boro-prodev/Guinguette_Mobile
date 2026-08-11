@@ -64,17 +64,53 @@ export const colors = {
   glassEdge: 'rgba(255,253,247,0.4)',
 
   /**
-   * `duskDeep` en translucide, pour les dégradés. Trois crans nommés plutôt
-   * qu'un `rgba` recopié : le voile des affiches, l'ombre du pli de la page
-   * journal, et le zéro.
+   * `duskDeep` en translucide, pour les dégradés et les ombres portées.
+   * Crans nommés plutôt qu'un `rgba` recopié dans chaque écran — repérés le
+   * 11 août 2026 en doublon dans l'accueil, Infos, l'en-tête et Tamagui.
    *
    * ⚠️ **Le zéro n'est pas `'transparent'`** : sur Android, un dégradé qui
    * finit sur `transparent` (donc sur du noir alpha 0) vire au gris en chemin.
    * Il faut la même encre à alpha 0.
    */
   duskFade: 'rgba(12,23,32,0)',
+  /** Voile de la vidéo d'accueil — 0,32 tranché au chantier 1d (`ROADMAP.md`), pas une valeur libre. */
+  duskMist: 'rgba(12,23,32,0.32)',
+  /** Ombre portée d'un texte clair posé sur une photo ou une vidéo qu'on ne maîtrise pas. */
+  duskHaze: 'rgba(12,23,32,0.45)',
   duskShade: 'rgba(12,23,32,0.5)',
+  /** Un cran plus marqué que `duskShade` — accroche de l'accueil, fond `soft` du thème `lampion`. */
+  duskAsh: 'rgba(12,23,32,0.55)',
+  /** Départ du lavis directionnel derrière le titre de l'accueil. */
+  duskSmoke: 'rgba(12,23,32,0.6)',
   duskVeil: 'rgba(12,23,32,0.85)',
+
+  /**
+   * `amberBulb` en translucide — même logique que le bloc `dusk*` ci-dessus,
+   * appliquée à la teinte ambrée : le halo doré du dégradé d'accueil, et le
+   * liseré du thème `lampion`.
+   */
+  amberFade: 'rgba(240,173,74,0)',
+  amberGlow: 'rgba(240,173,74,0.28)',
+  amberEdge: 'rgba(240,173,74,0.7)',
+
+  /**
+   * Teinte ember des ombres (déjà nommée dans le commentaire de `shadows`
+   * plus bas). Versions translucides pour tout ce qui a besoin de la couleur
+   * ET de l'opacité dans une seule valeur (dégradés, thème Tamagui) — là où
+   * `shadows` sépare `shadowColor` et `shadowOpacity`.
+   */
+  emberShadow: 'rgb(188,71,73)',
+  emberShadowSoft: 'rgba(188,71,73,0.16)',
+  /** Liséré pointillé sous une ligne de La Carte (`MenuBlockView`). */
+  emberHairline: 'rgba(188,71,73,0.2)',
+  emberShadowStrong: 'rgba(188,71,73,0.22)',
+
+  /**
+   * Fond assombri derrière la feuille de réservation. Volontairement neutre
+   * (noir pur, pas `duskDeep`) : un fond de modale suit la convention du
+   * scrim, pas la teinte de marque.
+   */
+  scrimBackdrop: 'rgba(0,0,0,0.45)',
 } as const;
 
 /**
@@ -246,7 +282,7 @@ export const radius = {
 export const shadows = {
   card: Platform.select<ViewStyle>({
     ios: {
-      shadowColor: 'rgb(188,71,73)',
+      shadowColor: colors.emberShadow,
       shadowOffset: { width: 0, height: 4 },
       shadowOpacity: 0.16,
       shadowRadius: 20,
@@ -256,7 +292,7 @@ export const shadows = {
   })!,
   raised: Platform.select<ViewStyle>({
     ios: {
-      shadowColor: 'rgb(188,71,73)',
+      shadowColor: colors.emberShadow,
       shadowOffset: { width: 0, height: 8 },
       shadowOpacity: 0.2,
       shadowRadius: 30,

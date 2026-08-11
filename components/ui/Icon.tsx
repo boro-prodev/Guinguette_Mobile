@@ -30,7 +30,8 @@ export type IconName =
   | 'link'
   | 'instagram'
   | 'facebook'
-  | 'flame';
+  | 'flame'
+  | 'message';
 
 type IconProps = {
   name: IconName;
@@ -140,6 +141,10 @@ const PATHS: Record<IconName, React.ReactNode> = {
   // Le pion de `location`, retourné : même arc, pointe en haut au lieu du bas.
   // Une flamme n'est jamais qu'une goutte d'eau qui remonte.
   flame: <Path d="M12 3s7 5.7 7 11a7 7 0 1 1-14 0c0-5.3 7-11 7-11Z" />,
+  // Bulle de discussion, queue en bas à gauche — l'option SMS d'Infos.
+  message: (
+    <Path d="M4.5 5.5h15a1 1 0 0 1 1 1V15a1 1 0 0 1-1 1H10l-4.5 3.5V16H4.5a1 1 0 0 1-1-1V6.5a1 1 0 0 1 1-1Z" />
+  ),
 };
 
 function IconComponent({

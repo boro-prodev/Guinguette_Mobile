@@ -198,7 +198,7 @@ const styles = StyleSheet.create({
   rowDivider: {
     borderBottomWidth: 1,
     borderStyle: 'dashed',
-    borderBottomColor: 'rgba(188,71,73,0.2)',
+    borderBottomColor: colors.emberHairline,
   },
   rowText: {
     flex: 1,

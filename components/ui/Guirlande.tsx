@@ -37,11 +37,15 @@ const BULBS: Bulb[] = [
   { cx: 222, cy: 5, flickerDelay: 1200 },
 ];
 
-function FlickeringBulb({ cx, cy, flickerDelay }: Bulb) {
+function FlickeringBulb({ cx, cy, flickerDelay, active }: Bulb & { active: boolean }) {
   const opacity = useSharedValue(1);
 
   useEffect(() => {
-    if (flickerDelay === null) return;
+    // `active` reste faux tant que la vidéo de l'accueil joue : la guirlande
+    // est une décoration, pas un second point d'attention pendant l'ouverture.
+    // Elle ne se met à scintiller qu'une fois la vidéo terminée (ou d'emblée
+    // pour tout autre appelant, `active` valant `true` par défaut).
+    if (flickerDelay === null || !active) return;
     // Reprend @keyframes bulb-flicker : 3,6 s, creux à 46 % puis 54 %.
     opacity.value = withDelay(
       flickerDelay,
@@ -58,7 +62,7 @@ function FlickeringBulb({ cx, cy, flickerDelay }: Bulb) {
         ReduceMotion.System
       )
     );
-  }, [flickerDelay, opacity]);
+  }, [flickerDelay, opacity, active]);
 
   const animatedProps = useAnimatedProps(() => ({ opacity: opacity.value }));
 
@@ -79,9 +83,16 @@ function FlickeringBulb({ cx, cy, flickerDelay }: Bulb) {
 
 type GuirlandeProps = {
   width?: number;
+  /**
+   * Passe à `false` pour garder les ampoules fixes (posées à leur opacité de
+   * repos, sans scintiller) tant qu'un événement plus important — la vidéo de
+   * l'accueil — n'est pas terminé. `true` par défaut : les appelants qui ne
+   * s'en soucient pas retrouvent le comportement d'origine.
+   */
+  active?: boolean;
 };
 
-function GuirlandeComponent({ width = 200 }: GuirlandeProps) {
+function GuirlandeComponent({ width = 200, active = true }: GuirlandeProps) {
   // Le viewBox fait 240 × 48 (et non 28) : chaque ampoule porte un halo de
   // rayon 8, et certaines (cy: 5, cy: 24) débordaient d'un cadre trop court
   // en hauteur — leurs halos étaient coupés net.
@@ -98,7 +109,7 @@ function GuirlandeComponent({ width = 200 }: GuirlandeProps) {
         fill="none"
       />
       {BULBS.map((bulb) => (
-        <FlickeringBulb key={`${bulb.cx}-${bulb.cy}`} {...bulb} />
+        <FlickeringBulb key={`${bulb.cx}-${bulb.cy}`} {...bulb} active={active} />
       ))}
     </Svg>
   );

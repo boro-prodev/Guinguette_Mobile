@@ -190,16 +190,24 @@ lent continue alors de glisser bien après coup : repéré par Jonathan comme un
 « impression de lag ». Passé à `'quick'` (`stiffness: 340`), qui se pose plus
 vite que la feuille ne met à tourner.
 
-**Une seule affiche porte le compte à rebours.** `ArtistSpotlight` n'a plus de
-`Countdown` depuis le 6 août 2026 : le répéter sur l'affiche de l'artiste
-doublait l'information déjà donnée par « À l'affiche », et faisait battre deux
-points ambrés sur la même page. `EventSpotlight` reste la seule source.
+⚠️ **Plus de compte à rebours du tout sur les affiches** — `Countdown`
+(`components/features/Countdown.tsx`) a existé un temps sur `EventSpotlight`
+seul (`ArtistSpotlight` ne l'avait déjà plus depuis le 6 août 2026, pour ne
+pas doubler l'information sur la même page), puis a été **supprimé**
+purement et simplement le 7 août 2026 : Jonathan trouvait la pastille qui
+clignotait (« J-7 · 18 h ») distrayante. Le composant, ainsi que
+`countdownTo`/`formatCountdown` dans `utils/date.ts`, restés sans autre
+utilisateur, ont été retirés avec lui — ne pas les réintroduire sans regarder
+si le besoin est réellement revenu.
 
 **Les réseaux de l'artiste (`ArtistDetailPane`) sont en `tone="soft"` et
 `size="md"`**, pas `ghost`/`sm` : « les mettre un peu plus en avant », demande
-du même jour. Trois pastilles nues en bas de panneau se lisaient comme un
+du 6 août 2026. Trois pastilles nues en bas de panneau se lisaient comme un
 détail secondaire ; un disque de couleur (teinte du thème de la soirée) leur
-donne un poids visuel, un `Kicker` (« Retrouver l'artiste ») les identifie.
+donne un poids visuel. Un `Kicker` (« Retrouver l'artiste ») les a un temps
+identifiées, retiré le 7 août 2026 — Jonathan le jugeait superflu au-dessus de
+trois pastilles déjà assez parlantes, d'autant plus depuis qu'elles portent
+leurs vraies couleurs de marque (`SocialIcon`, `components/ui/SocialIcon.tsx`).
 Mécanique inchangée — mêmes trois `Linking.openURL`, même désactivation si
 l'URL est vide (voir `.claude/rules/donnees-et-demo.md`).
 
@@ -303,6 +311,84 @@ Quatre choses à ne pas défaire :
   l'outline de la vue — avec `radius.pill`, un parent pleine largeur donne une
   pilule aussi large que l'écran, visible comme une bande grise.
 
+## Infos : une carte de contact sur fond photo, réduite à l'essentiel
+
+`app/(tabs)/infos.tsx` a changé **cinq fois** le 7 août 2026. Ce qui reste
+aujourd'hui, dans l'ordre des passes (utile pour ne pas revenir en arrière
+sans le savoir) :
+
+1. Hero photo + titre « Infos Pratiques », trois cartes toujours dépliées.
+2. Trois cartes en **dropdown** (accordéon, émojis, `MapPreview.tsx`).
+3. Une **carte de visite sombre** (titre, sous-titre, séparateur, lignes de
+   contact, guirlande en pied) — inspirée d'une référence graphique fournie
+   par Jonathan.
+4. La photo d'ambiance de l'accueil (`ambiance-soiree.webp`) en fond de
+   carte, plus de titre.
+5. Retour à une carte **sans photo**, fond clair — malentendu : « enlève
+   l'image » visait en réalité le logo Google Maps (point 6), pas la photo.
+6. **La version actuelle** : la photo est revenue, le logo Google Maps a
+   disparu. Fond de carte `ambiance-soiree.webp` (la même qu'à l'accueil,
+   avec son voile de lisibilité), titre court (« Infos Pratiques », sans
+   sous-titre) et trois lignes de contact essentielles (appeler, SMS,
+   localisation), chacune avec une icône, le tout **centré verticalement**
+   dans la carte (`justifyContent: 'center'` sur `card`, pas seulement
+   `alignItems` horizontal). Chaque passe a retiré ce que la précédente
+   venait d'ajouter (`InfoCard`, `MapPreview.tsx`, le kicker de marque,
+   `venue.email`/`venue.website`, le logo Google Maps et
+   `assets/images/googlemaps.webp`) : ne pas les réintroduire sans savoir
+   qu'ils ont déjà été essayés et écartés.
+
+⚠️ **« Émoji » demandé, icônes livrées — c'est délibéré, pas une
+approximation.** Un vrai emoji Unicode (📞, 💬, 📍) est un glyphe **couleur**,
+dessiné par la police emoji du système (Apple Color Emoji ≠ Noto Color Emoji
+d'Android) : aucun moyen fiable de le rendre « noir et blanc », et son rendu
+diffère justement d'un OS à l'autre — l'inverse de ce qui était demandé
+(« compatible iPhone et Android »). `Icon.tsx` (`call`, `message`,
+`location`) est le jeu de pictogrammes du projet : un seul trait, une seule
+couleur, un rendu strictement identique quelle que soit la plateforme. C'est
+elle, pas un caractère emoji, qui tient la promesse demandée.
+
+**Voile de lisibilité obligatoire sur la photo** (`styles.veil`,
+`colors.duskShade`, 0,5) — même règle que le texte sur la vidéo de l'accueil,
+plus bas dans ce fichier : jamais de texte clair posé directement sur une
+photo qu'on ne maîtrise pas. Le titre et les lignes de contact portent tous
+`colors.surfaceContainerLowest` (le même blanc cassé que partout ailleurs sur
+fond sombre) plus une ombre portée légère — sans elle le texte se délite sur
+les zones les plus claires de la photo (guirlandes, tentes éclairées).
+
+**`ContactLine` (local au fichier) est un `PressableScale`, pas un
+`Button`.** Une ligne de contact se lit comme du texte accompagné d'une
+icône, pas comme une action étiquetée — même logique que la carte repliable
+de La Carte (`DishCard`). Trois lignes seulement, toutes au même poids visuel
+(pas de traitement « secondaire ») :
+
+| Ligne | Icône | Action |
+|---|---|---|
+| Téléphone (`venue.phone`) | `call` | `tel:${venue.phoneDial}` — clavier d'appel, numéro déjà composé |
+| Envoyer un SMS | `message` | `sms:${venue.phoneDial}` — appli de messages, numéro déjà rempli |
+| Adresse (`venue.street`, `venue.city`) | `location` | `venue.mapsUrl` — Google Maps |
+
+⚠️ **Pas de logo Google Maps sous l'adresse.** Essayé le 7 août 2026 — d'abord
+redessiné à la main (`SocialIcon`, name `maps`, retiré de `SocialIcon.tsx`),
+puis remplacé par le vrai fichier fourni par Jonathan
+(`assets/images/googlemaps.webp`) — avant d'être retiré à son tour le même
+jour : l'adresse ouvre déjà Google Maps au toucher, un second déclencheur
+juste en dessous ne faisait que répéter la même action.
+
+**La réservation reste joignable depuis l'en-tête**, sur cet écran comme sur
+les trois autres : ce n'est plus le rôle de cette carte, qui ne parle que de
+contact direct. **Les horaires n'ont pas bougé** à travers ces six passes —
+carte séparée, toujours dépliée, juste en dessous.
+
+⚠️ **La carte de contact reprend la hauteur MESURÉE de la carte Horaires**,
+pas une valeur devinée. `Reveal` (`components/ui/Reveal.tsx`) transmet
+`onLayout` — la carte Horaires y écrit sa propre hauteur rendue
+(`onHoursLayout`), et la carte de contact la reprend telle quelle dès qu'elle
+est connue (`minHeight: 240` sert de repli le temps du premier rendu). Une
+valeur en dur aurait fini par diverger au moindre changement de police, de
+`spacing` ou de contenu des horaires ; la mesure reste juste par
+construction.
+
 ## La feuille de réservation glisse depuis `onShow`, pas depuis un effet
 
 ⚠️ Le glissement d'ouverture part de **`<Modal onShow>`** — c'est-à-dire quand
@@ -361,14 +447,34 @@ règles encadrent ce séquencement :
 - **Invisible veut dire inatteignable** : `pointerEvents="none"` *et*
   `accessibilityElementsHidden` tant que l'ouverture tourne. Un bouton
   transparent qu'on peut quand même activer est un piège.
-- **Trois sorties garantissent que les boutons finissent toujours par
+- **Quatre sorties garantissent que les boutons finissent toujours par
   apparaître** : la fin normale (`playToEnd`), les animations coupées
-  (`reduceMotion`, la vidéo n'est alors jamais chargée) et l'échec de lecture
-  (`status === 'error'`). Un fond décoratif ne doit jamais pouvoir retenir
-  l'action principale de l'écran en otage.
+  (`reduceMotion`, la vidéo n'est alors jamais chargée), l'échec de lecture
+  (`status === 'error'`) et le changement d'onglet avant la fin (ci-dessous). Un
+  fond décoratif ne doit jamais pouvoir retenir l'action principale de l'écran
+  en otage.
 
 L'ouverture se joue **une fois par session** : les écrans étant des onglets,
 l'accueil reste monté, donc revenir dessus depuis La Carte ne la rejoue pas.
+
+⚠️ **Changer d'onglet avant la fin de l'ouverture la termine d'un coup, pas en
+fondu.** `lazy: false` (`app/(tabs)/_layout.tsx`) garde l'accueil monté en
+permanence : sans cette sortie, quitter l'onglet en cours d'ouverture laissait
+la vidéo continuer de jouer hors écran, et les deux boutons finir leur fondu de
+2 s dans le vide. `useIsFocused()` (exporté par `expo-router`) détecte la perte
+de focus et **saute directement à l'état final** — `player.currentTime` posé à
+`player.duration`, vidéo mise en pause, les trois valeurs d'opacité (vidéo,
+bouton principal, bouton secondaire) écrites à `1` sans `withTiming` — pour
+qu'au retour sur l'accueil il n'y ait plus rien à attendre. Demande de
+Jonathan, 7 août 2026.
+
+**Les décorations purement ambiantes attendent la fin de l'ouverture pour se
+mettre en mouvement.** La guirlande (`Guirlande`, prop `active`) ne scintille
+qu'une fois `introDone` vrai — quelle que soit la sortie empruntée parmi les
+quatre ci-dessus. Avant, le scintillement démarrait dès le montage, en même
+temps que la vidéo : deux animations qui se disputaient le regard pendant
+l'ouverture. Le motif (`active?: boolean`, `true` par défaut) est réutilisable
+pour toute future décoration du même genre.
 
 **Trois choses à ne pas défaire non plus :**
 

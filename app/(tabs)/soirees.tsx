@@ -31,7 +31,7 @@ import {
 } from '@/components/features/NewspaperPager';
 import { DotBar, DotTarget } from '@/components/features/SpotlightParts';
 import { Reveal } from '@/components/ui/Reveal';
-import { colors, spacing, tabularNums, type } from '@/constants/theme';
+import { colors, spacing, type } from '@/constants/theme';
 import { artists } from '@/data/artists';
 import { events, type GuinguetteEvent } from '@/data/events';
 import type { Artist } from '@/data/artists';
@@ -53,7 +53,12 @@ export default function SoireesScreen() {
     []
   );
 
-  const renderPage = useCallback((page: SoireePage) => <PageContent page={page} />, []);
+  const renderPage = useCallback(
+    (page: SoireePage) => (
+      <PageContent page={page} pageLabel={`${index + 1} / ${pages.length}`} />
+    ),
+    [index, pages.length]
+  );
 
   return (
     <View style={styles.screen}>
@@ -83,13 +88,15 @@ export default function SoireesScreen() {
               </DotTarget>
             ))}
           </XStack>
-          {/* Demande de Jonathan, 6 août 2026 : un indicateur plus marquant que
-              la seule rangée de pastilles — trop discrète pour dire d'un coup
-              d'œil « où on en est ». Le chiffre, lui, ne laisse aucun doute.
-              `tabularNums` : il se réécrit à chaque tour de page, une chasse
-              fixe lui évite de tressauter en largeur. */}
-          <Text style={styles.pageCount}>{`${index + 1} / ${pages.length}`}</Text>
         </Reveal>
+        {/*
+          Le repère « 2 / 3 » vivait ici, sur sa propre ligne — demande de
+          Jonathan, 11 août 2026 : déplacé sur la ligne du kicker
+          « La Guinzette des prochaines soirées » (`EventSpotlight`, prop
+          `pageLabel`, ci-dessous dans `renderPage`), pour rendre à l'en-tête
+          la hauteur qu'il prenait et laisser le journal — le contenu
+          principal — remonter d'autant.
+        */}
       </View>
 
       {/*
@@ -119,10 +126,21 @@ export default function SoireesScreen() {
   );
 }
 
-/** Le contenu d'une feuille — mémoïsé : tourner la page ne le recalcule pas. */
-const PageContent = ({ page }: { page: SoireePage }) => (
+/**
+ * Le contenu d'une feuille — mémoïsé : tourner la page ne le recalcule pas
+ * (`EventSpotlight`/`ArtistSpotlight` sont `memo`, voir leurs fichiers).
+ *
+ * `pageLabel` ne va qu'à `EventSpotlight` : c'est sa ligne de kicker,
+ * « La Guinzette des prochaines soirées », qui porte désormais le repère de
+ * pagination — pas celle d'« Artist Spot ».
+ */
+const PageContent = ({ page, pageLabel }: { page: SoireePage; pageLabel: string }) => (
   <YStack gap="$md">
-    <EventSpotlight kicker="À l’affiche" event={page.event} />
+    <EventSpotlight
+      kicker="La Guinzette des prochaines soirées"
+      event={page.event}
+      pageLabel={pageLabel}
+    />
     {page.artist && (
       <ArtistSpotlight kicker="Artist Spot" artist={page.artist} event={page.event} />
     )}
@@ -141,7 +159,10 @@ const styles = StyleSheet.create({
   },
   title: {
     ...type.displayLg,
-    color: colors.primary,
+    // Noir, demande de Jonathan, 7 août 2026 — `colors.onSurface` est le texte
+    // « noir » du design system (même token que le titre de La Carte et les
+    // titres de cartes d'Infos), pas un `#000000` inédit posé en dur.
+    color: colors.onSurface,
     textAlign: 'center',
     marginBottom: spacing.sm,
   },
@@ -149,13 +170,6 @@ const styles = StyleSheet.create({
     ...type.headlineXs,
     color: colors.onSurfaceVariant,
     textAlign: 'center',
-  },
-  pageCount: {
-    ...type.caption,
-    ...tabularNums,
-    color: colors.onSurfaceVariant,
-    textAlign: 'center',
-    marginTop: spacing.xs,
   },
   pager: {
     flex: 1,

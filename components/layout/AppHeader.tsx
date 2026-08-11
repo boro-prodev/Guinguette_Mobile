@@ -87,7 +87,7 @@ const styles = StyleSheet.create({
   },
   brandFloating: {
     color: colors.surfaceContainerLowest,
-    textShadowColor: 'rgba(12,23,32,0.5)',
+    textShadowColor: colors.duskShade,
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 6,
   },

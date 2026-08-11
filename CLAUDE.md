@@ -45,7 +45,9 @@ Elles priment, même sans avoir ouvert le fichier de règles correspondant.
 | `.claude/rules/typographie.md` | poser une taille de texte ou un interligne, écrire un libellé, rédiger du contenu français |
 | `.claude/rules/ecrans.md` | toucher à la navigation, à un défilement, à une animation, au fond vidéo de l'accueil |
 | `.claude/rules/donnees-et-demo.md` | modifier le contenu de la démo, ajouter un parcours, persister un état |
+| `.claude/rules/composants.md` | chercher les props d'un composant existant sans ouvrir son fichier, ou en ajouter un à la table |
 | `ROADMAP.md` | entamer un chantier — il ne reste que le mouvement (bouton, feuille), le voile de la vidéo et l'ouverture des fiches de La Carte |
+| `DECISIONS.md` | vérifier si un choix déjà tranché (contenu, UX, arbitrage produit) n'est pas en train d'être rouvert sans le savoir |
 
 Lancer l'app, installer un paquet, toucher aux versions ou committer : ce n'est
 plus un fichier à ouvrir, c'est le skill **`environnement`**, invoqué
@@ -67,7 +69,8 @@ automatiquement selon l'intention (`.claude/skills/environnement/`).
 | Chemin | Rôle |
 |---|---|
 | `ROADMAP.md` | **Prochaines étapes** — chantiers à venir et questions ouvertes |
-| `.claude/rules/` | Les règles détaillées, par domaine (voir l'index ci-dessus) |
+| `DECISIONS.md` | **Décisions déjà tranchées** — index chronologique, pointeurs vers le détail |
+| `.claude/rules/` | Les règles détaillées, par domaine (voir l'index ci-dessus), dont `composants.md` — la table de props de chaque composant |
 | `app/_layout.tsx` | Racine : polices, safe-area, `TamaguiProvider`, `ToastProvider`, `ReserveProvider` |
 | `app/(tabs)/_layout.tsx` | **Source unique de la navigation** (header, onglets, transition) — **au tap uniquement**, plus de swipe au doigt entre onglets |
 | `app/(tabs)/index · carte · soirees · infos` | Les 4 écrans (accueil, menu, événements, infos pratiques) |
@@ -79,7 +82,6 @@ automatiquement selon l'intention (`.claude/skills/environnement/`).
 | `components/features/SpotlightParts.tsx` | L'habillage commun aux deux sections de Soirées (cadre d'affiche, titraille, panneau à ombre, pastilles). **Aucune mécanique** — le carrousel qu'il portait a été retiré |
 | `components/features/EventSpotlight.tsx` / `EventDetailPane.tsx` | « À l'affiche » : la soirée de la page — affiche, description, programme, jauge d'ambiance, tarif, bouton « J'y serai » |
 | `components/features/ArtistSpotlight.tsx` / `ArtistDetailPane.tsx` | « Artist Spot » : l'artiste de **cette même soirée** (`data/artists.ts`, relié par `eventId`) — bio, style musical, liens site/réseaux sociaux |
-| `components/features/Countdown.tsx` | Compte à rebours vivant (retick chaque minute, point qui bat) |
 | `components/features/HypeGauge.tsx` | Jauge d'ambiance d'une soirée (`data/events.ts` → `hype`) — pousse depuis la gauche à l'apparition, bondit d'un cran quand on tape « J'y serai » |
 | `features/reserve/` | Parcours de réservation simulé (bottom sheet 3 étapes) |
 | `data/` | Données placeholder : `menu.ts`, `events.ts`, `artists.ts`, `venue.ts` |
