@@ -2,7 +2,8 @@
 
 > **Ce document ne parle que du futur.** Ce que l'app *fait* aujourd'hui est
 > décrit dans `CLAUDE.md` ; *pourquoi* elle le fait ainsi, et les pièges
-> rencontrés en chemin, dans `.claude/rules/`.
+> rencontrés en chemin, dans `.claude/rules/` ; l'index chronologique des
+> décisions déjà tranchées, dans `DECISIONS.md`.
 >
 > **Remis à plat le 6 août 2026.** Il avait grossi jusqu'à 1000 lignes en
 > accumulant, en tête de fichier, le récit chronologique de chaque chantier
