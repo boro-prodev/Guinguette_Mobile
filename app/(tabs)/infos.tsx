@@ -197,7 +197,7 @@ const styles = StyleSheet.create({
   cardTitle: {
     ...type.headlineMd,
     color: colors.surfaceContainerLowest,
-    textShadowColor: 'rgba(12,23,32,0.45)',
+    textShadowColor: colors.duskHaze,
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 6,
   },
@@ -217,7 +217,7 @@ const styles = StyleSheet.create({
   contactText: {
     ...type.bodyLg,
     color: colors.surfaceContainerLowest,
-    textShadowColor: 'rgba(12,23,32,0.45)',
+    textShadowColor: colors.duskHaze,
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 6,
   },

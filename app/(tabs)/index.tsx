@@ -278,7 +278,7 @@ export default function HomeScreen() {
         <View style={styles.veil} pointerEvents="none" />
         <LinearGradient
           pointerEvents="none"
-          colors={['rgba(240,173,74,0.28)', 'rgba(240,173,74,0)']}
+          colors={[colors.amberGlow, colors.amberFade]}
           locations={[0, 0.42]}
           start={{ x: 0, y: 1 }}
           end={{ x: 0, y: 0 }}
@@ -286,7 +286,7 @@ export default function HomeScreen() {
         />
         <LinearGradient
           pointerEvents="none"
-          colors={['rgba(12,23,32,0.6)', 'rgba(12,23,32,0)']}
+          colors={[colors.duskSmoke, colors.duskFade]}
           locations={[0, 0.38]}
           start={{ x: 0, y: 0 }}
           end={{ x: 0, y: 1 }}
@@ -392,11 +392,12 @@ const styles = StyleSheet.create({
   },
   veil: {
     ...StyleSheet.absoluteFill,
-    // 0,32 et non 0,20 depuis le passage à la vidéo. La photo fixe était sombre
-    // au centre, là où se posent le titre et l'accroche ; la vidéo, elle, y fait
-    // défiler des visages, un feu, des lampions. Un fond qu'on ne maîtrise plus
-    // demande un voile qui ne dépend pas de ce qu'il y a dessous.
-    backgroundColor: 'rgba(12,23,32,0.32)',
+    // duskMist (0,32) et non 0,20 depuis le passage à la vidéo. La photo fixe
+    // était sombre au centre, là où se posent le titre et l'accroche ; la
+    // vidéo, elle, y fait défiler des visages, un feu, des lampions. Un fond
+    // qu'on ne maîtrise plus demande un voile qui ne dépend pas de ce qu'il y
+    // a dessous.
+    backgroundColor: colors.duskMist,
   },
   content: {
     flex: 1,
@@ -415,7 +416,7 @@ const styles = StyleSheet.create({
     ...type.displayLg,
     color: colors.surfaceContainerLowest,
     textAlign: 'center',
-    textShadowColor: 'rgba(12,23,32,0.45)',
+    textShadowColor: colors.duskHaze,
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 12,
   },
@@ -434,7 +435,7 @@ const styles = StyleSheet.create({
     // Même ombre portée que le titre : c'est elle qui tient l'accroche quand
     // une image claire passe derrière. L'`opacity: 0.9` d'avant a sauté — sur
     // fond mouvant, atténuer un texte est exactement ce qu'il ne faut pas faire.
-    textShadowColor: 'rgba(12,23,32,0.55)',
+    textShadowColor: colors.duskAsh,
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 10,
   },

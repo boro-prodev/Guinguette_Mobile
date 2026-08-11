@@ -22,8 +22,9 @@ paths:
   partout, StyleSheet comme Tamagui. Ne jamais recopier une valeur dans la
   config.
 - Pas de dark mode : `userInterfaceStyle` est figé sur `light` dans `app.json`.
-- ⚠️ **Le fond de la vue racine (`expo-system-ui`) est la seule exception
-  admise à « jamais de valeur en dur ».** Zone précise : la barre de
+- ⚠️ **Le fond de la vue racine (`expo-system-ui`) est l'une des deux
+  exceptions admises à « jamais de valeur en dur »** (l'autre est
+  `SocialIcon.tsx`, plus bas). Zone précise : la barre de
   navigation **système** d'Android elle-même (les boutons/gestes du
   téléphone — recents, home, retour), **pas** la barre d'onglets de l'app
   (celle-là reste peinte par `colors.surface`, `app/(tabs)/_layout.tsx`).
@@ -50,6 +51,17 @@ paths:
     demande de Jonathan, qui voulait cette zone **sombre**, au ton du fond
     assombri de la feuille de réservation plutôt qu'accordée au fond crème du
     reste de l'app.
+- ⚠️ **`components/ui/SocialIcon.tsx` est la seconde exception.** Facebook et
+  Instagram ont une identité de couleur fixe, propre à la marque (bleu
+  `#1877F2`, dégradé jaune-rose-violet) : leur donner la teinte du thème
+  ambiant, comme le reste du jeu d'icônes (`Icon.tsx`, à trait unique), les
+  rendrait méconnaissables. Elles sont donc dessinées à part, avec leurs
+  vraies couleurs — c'est le **seul** endroit de l'app où une icône ne prend
+  pas sa couleur du thème courant. Le globe du site web, dans le même fichier,
+  n'est **pas** concerné : il reste sur le principe habituel (trait fin,
+  couleur reçue en prop). Cette exception est exclue par nom dans le hook
+  `pre-commit` (`.githooks/pre-commit`) qui bloque toute autre couleur en dur
+  ajoutée au code.
 
 ## Les accents passent par des thèmes, pas par des props
 

@@ -549,7 +549,7 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   backdrop: {
     ...StyleSheet.absoluteFill,
-    backgroundColor: 'rgba(0,0,0,0.45)',
+    backgroundColor: colors.scrimBackdrop,
   },
   sheetWrapper: {
     flex: 1,

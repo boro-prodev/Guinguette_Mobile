@@ -189,8 +189,8 @@ const baseTheme = {
 
   placeholderColor: colors.outline,
   outlineColor: colors.outline,
-  shadowColor: 'rgba(188,71,73,0.16)',
-  shadowColorHover: 'rgba(188,71,73,0.22)',
+  shadowColor: colors.emberShadowSoft,
+  shadowColorHover: colors.emberShadowStrong,
 
   /* Clés maison */
   muted: colors.onSurfaceVariant,
@@ -256,12 +256,12 @@ const themes = {
    */
   light_lampion: accent({
     color: colors.surfaceContainerLowest,
-    borderColor: 'rgba(240,173,74,0.7)',
+    borderColor: colors.amberEdge,
     solid: colors.amberBulb,
     onSolid: colors.duskDeep,
     // Un voile assez dense pour qu'un texte clair reste lisible par-dessus
     // n'importe quelle photo, y compris ses zones les plus claires.
-    soft: 'rgba(12,23,32,0.55)',
+    soft: colors.duskAsh,
     onSoft: colors.surfaceContainerLowest,
     // Sur la photo sombre, un contour ambré mais un texte blanc : c'est le
     // texte qui doit rester lisible, pas se fondre dans le contour.
